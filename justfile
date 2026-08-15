@@ -2,6 +2,9 @@
 rust:
     anchor test
 
+rust-logs:
+    anchor test --script test-rust-logs
+
 # TypeScript Mocha tests. Surfpool is started here because
 # skip_local_validator = true keeps `anchor test` in-process for Rust.
 ts:

@@ -32,6 +32,17 @@ impl Session {
     pub const LEN: usize = 8 + Self::INIT_SPACE;
 
     pub const SEED_PREFIX: &'static [u8] = b"session";
+
+    pub fn find_pda(user_smart_wallet: &Pubkey, session_key: &Pubkey) -> (Pubkey, u8) {
+        Pubkey::find_program_address(
+            &[
+                Self::SEED_PREFIX,
+                user_smart_wallet.as_ref(),
+                session_key.as_ref(),
+            ],
+            &crate::ID,
+        )
+    }
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]

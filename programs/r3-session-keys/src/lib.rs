@@ -5,6 +5,7 @@ pub mod instructions;
 pub mod state;
 pub mod utils;
 
+pub use instructions::create_session::*;
 pub use instructions::create_smart_wallet::*;
 pub use instructions::increment::*;
 pub use instructions::initialize::*;
@@ -37,5 +38,13 @@ pub mod r3_session_keys {
 
     pub fn create_smart_wallet(ctx: Context<CreateSmartWallet>, user_wallet: Pubkey) -> Result<()> {
         handlers::create_smart_wallet::handle(ctx, user_wallet)
+    }
+
+    pub fn create_session(
+        ctx: Context<CreateSession>,
+        session_key: Pubkey,
+        smart_wallet: Pubkey,
+    ) -> Result<()> {
+        handlers::create_session::handle(ctx, session_key, smart_wallet)
     }
 }

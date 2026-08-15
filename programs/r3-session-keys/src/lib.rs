@@ -5,8 +5,11 @@ pub mod instructions;
 pub mod state;
 pub mod utils;
 
+pub use instructions::create_smart_wallet::*;
 pub use instructions::increment::*;
 pub use instructions::initialize::*;
+pub use instructions::pause::*;
+pub use instructions::unpause::*;
 pub use utils::constants;
 pub use utils::errors;
 
@@ -22,5 +25,17 @@ pub mod r3_session_keys {
 
     pub fn increment(ctx: Context<Increment>) -> Result<()> {
         handlers::increment::handle(ctx)
+    }
+
+    pub fn pause(ctx: Context<Pause>) -> Result<()> {
+        handlers::pause::handle(ctx)
+    }
+
+    pub fn unpause(ctx: Context<Unpause>) -> Result<()> {
+        handlers::unpause::handle(ctx)
+    }
+
+    pub fn create_smart_wallet(ctx: Context<CreateSmartWallet>, user_wallet: Pubkey) -> Result<()> {
+        handlers::create_smart_wallet::handle(ctx, user_wallet)
     }
 }

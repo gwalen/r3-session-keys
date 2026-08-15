@@ -8,7 +8,10 @@ use {
     r3_session_keys::{
         accounts,
         instruction,
-        state::counter::Counter,
+        state::{
+            counter::Counter,
+            program_config::{ProgramConfig, ProgramStatus},
+        },
         utils::constants::COUNTER_SEED,
     },
     solana_keypair::Keypair,
@@ -33,6 +36,8 @@ fn test_initialize() {
     let program_id = r3_session_keys::id();
     let payer = Keypair::new();
     let counter = Pubkey::find_program_address(&[COUNTER_SEED], &program_id).0;
+    let (program_config, program_config_bump) =
+        Pubkey::find_program_address(&[ProgramConfig::SEED_PREFIX], &program_id);
     let mut svm = LiteSVM::new();
     let bytes = include_bytes!(concat!(
         env!("CARGO_TARGET_TMPDIR"),
@@ -47,7 +52,8 @@ fn test_initialize() {
         program_id,
         &instruction::Initialize {}.data(),
         accounts::Initialize {
-            payer: payer.pubkey(),
+            admin: payer.pubkey(),
+            program_config,
             counter,
             system_program: system_program::ID,
         }
@@ -65,6 +71,13 @@ fn test_initialize() {
     let counter_state = Counter::try_deserialize(&mut data).unwrap();
     assert_eq!(counter_state.count, 0);
     assert_eq!(counter_state.authority, payer.pubkey());
+
+    let program_config_account = svm.get_account(&program_config).unwrap();
+    let mut data: &[u8] = &program_config_account.data;
+    let program_config_state = ProgramConfig::try_deserialize(&mut data).unwrap();
+    assert_eq!(program_config_state.admin, payer.pubkey());
+    assert_eq!(program_config_state.status, ProgramStatus::Active);
+    assert_eq!(program_config_state.bump, program_config_bump);
 
     let ix = Instruction::new_with_bytes(
         program_id,

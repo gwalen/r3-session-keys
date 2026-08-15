@@ -44,7 +44,8 @@ pub mod r3_session_keys {
         ctx: Context<CreateSession>,
         session_key: Pubkey,
         smart_wallet: Pubkey,
+        expires_at: i64,
     ) -> Result<()> {
-        handlers::create_session::handle(ctx, session_key, smart_wallet)
+        handlers::create_session::handle(ctx, session_key, smart_wallet, expires_at)
     }
 }

@@ -29,7 +29,7 @@ fn test_pause_blocks_creates_and_unpause_restores() {
     send_tx_expect_error(&mut env.svm, ix, &[&env.admin]);
     assert_program_paused(&env);
 
-    let (ix, _, _) = client::create_session(env.admin.pubkey(), user_smart_wallet, session_key);
+    let (ix, _, _) = client::create_session(env.admin.pubkey(), user_smart_wallet, session_key, 0);
     send_tx_expect_error(&mut env.svm, ix, &[&env.admin]);
     assert_program_paused(&env);
 
@@ -42,7 +42,7 @@ fn test_pause_blocks_creates_and_unpause_restores() {
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
     let _: UserSmartWallet = load(&env, &other_smart_wallet);
 
-    let (ix, session, _) = client::create_session(env.admin.pubkey(), user_smart_wallet, session_key);
+    let (ix, session, _) = client::create_session(env.admin.pubkey(), user_smart_wallet, session_key, 0);
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
     let _: Session = load(&env, &session);
 }

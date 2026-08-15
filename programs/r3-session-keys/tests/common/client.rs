@@ -59,6 +59,7 @@ pub fn create_session(
     session_owner: Pubkey,
     user_smart_wallet: Pubkey,
     session_key: Pubkey,
+    expires_at: i64,
 ) -> (Instruction, Pubkey, u8) {
     let (program_config, _) = ProgramConfig::find_pda();
     let (session, bump) = Session::find_pda(&user_smart_wallet, &session_key);
@@ -74,6 +75,7 @@ pub fn create_session(
         instruction::CreateSession {
             session_key,
             smart_wallet: user_smart_wallet,
+            expires_at,
         },
     );
     (ix, session, bump)

@@ -14,16 +14,16 @@ pub struct Session {
     pub session_key: Pubkey,
     pub expires_at: i64,
 
+    // TODO: implement later if enough time
     // This allocates 4 + 32 * 10 = 324 bytes // 4 bytes for length
-    #[max_len(10)]
-    pub allowed_writeable_mint_list: Vec<Pubkey>,
+    // #[max_len(10)]
+    // pub allowed_writeable_mint_list: Vec<Pubkey>,
+    // // This allocates 4 + 8 * 10 = 84 bytes // 4 bytes for length
+    // #[max_len(10)]
+    // pub mint_limits: Vec<u64>,
 
-    // This allocates 4 + 8 * 10 = 84 bytes // 4 bytes for length
-    #[max_len(10)]
-    pub mint_limits: Vec<u64>,
-
+    // TODO: after revoke, no more operations allowed and than user can close the session and reclaim rent
     pub status: SessionStatus,
-    // pub revoked: bool, // TODO: after revoke, no more operations allowed and than user can close the session and reclaim rent
     pub nonce: u64,
     pub bump: u8,
 }

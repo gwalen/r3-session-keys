@@ -1,0 +1,21 @@
+skip_local_validator = true
+
+[toolchain]
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+r3_session_keys = "r3xx1495USK8vysHAfL83d9seSofMH77ytxjuhepfFH"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+# test = "cargo test"
+# run tests with println logs
+test = "cargo test -- --nocapture"
+
+[hooks]

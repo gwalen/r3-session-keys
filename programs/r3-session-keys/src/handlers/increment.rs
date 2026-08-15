@@ -1,18 +1,11 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    state::counter::Counter,
+    instructions::increment::Increment,
     utils::{constants::*, errors::DappError},
 };
 
-#[derive(Accounts)]
-pub struct Increment<'info> {
-    #[account(mut, seeds = [COUNTER_SEED], bump)]
-    pub counter: Account<'info, Counter>,
-    pub authority: Signer<'info>,
-}
-
-pub fn handle_increment(ctx: Context<Increment>) -> Result<()> {
+pub fn handle(ctx: Context<Increment>) -> Result<()> {
     require_keys_eq!(
         ctx.accounts.counter.authority,
         ctx.accounts.authority.key(),

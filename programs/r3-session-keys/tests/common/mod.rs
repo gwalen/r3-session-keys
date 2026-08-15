@@ -8,18 +8,23 @@ pub use env::Env;
 use {
     anchor_lang::{prelude::Pubkey, solana_program::instruction::Instruction, AccountDeserialize},
     litesvm::LiteSVM,
+    r3_session_keys::state::program_config::{ProgramConfig, ProgramStatus},
     solana_keypair::Keypair,
-    solana_message::{Message, VersionedMessage},
+    solana_message::{v0, VersionedMessage},
     solana_signer::Signer,
     solana_transaction::versioned::VersionedTransaction,
 };
 
-pub fn send(env: &mut Env, ix: Instruction) {
-    send_tx(&mut env.svm, ix, &[&env.admin]);
-}
-
-pub fn send_err(env: &mut Env, ix: Instruction) -> String {
-    send_tx_err(&mut env.svm, ix, &[&env.admin])
+fn signed_v0_tx(svm: &LiteSVM, ix: Instruction, signers: &[&Keypair]) -> VersionedTransaction {
+    let payer = signers[0];
+    let msg = v0::Message::try_compile(
+        &payer.pubkey(),
+        &[ix],
+        &[], // LUT
+        svm.latest_blockhash(),
+    )
+    .unwrap();
+    VersionedTransaction::try_new(VersionedMessage::V0(msg), signers).unwrap()
 }
 
 pub fn load<T: AccountDeserialize>(env: &Env, key: &Pubkey) -> T {
@@ -28,12 +33,11 @@ pub fn load<T: AccountDeserialize>(env: &Env, key: &Pubkey) -> T {
     T::try_deserialize(&mut data).unwrap()
 }
 
-pub fn send_tx(svm: &mut LiteSVM, ix: Instruction, signers: &[&Keypair]) {
-    let payer = signers[0];
-    let blockhash = svm.latest_blockhash();
-    let msg = Message::new_with_blockhash(&[ix], Some(&payer.pubkey()), &blockhash);
-    let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), signers).unwrap();
-    match svm.send_transaction(tx) {
+pub fn send_tx_expect_ok(svm: &mut LiteSVM, ix: Instruction, signers: &[&Keypair]) {
+    let tx = signed_v0_tx(svm, ix, signers);
+    let result = svm.send_transaction(tx);
+    advance_blockhash(svm);
+    match result {
         Ok(meta) => println!("{}", meta.pretty_logs()),
         Err(e) => {
             println!("Transaction failed: {:?}", e.err);
@@ -43,12 +47,11 @@ pub fn send_tx(svm: &mut LiteSVM, ix: Instruction, signers: &[&Keypair]) {
     }
 }
 
-fn send_tx_err(svm: &mut LiteSVM, ix: Instruction, signers: &[&Keypair]) -> String {
-    let payer = signers[0];
-    let blockhash = svm.latest_blockhash();
-    let msg = Message::new_with_blockhash(&[ix], Some(&payer.pubkey()), &blockhash); // TODO think twice
-    let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), signers).unwrap();
-    match svm.send_transaction(tx) {
+pub fn send_tx_expect_error(svm: &mut LiteSVM, ix: Instruction, signers: &[&Keypair]) -> String {
+    let tx = signed_v0_tx(svm, ix, signers);
+    let result = svm.send_transaction(tx);
+    advance_blockhash(svm);
+    match result {
         Ok(meta) => {
             println!("{}", meta.pretty_logs());
             panic!("expected transaction to fail");
@@ -56,15 +59,19 @@ fn send_tx_err(svm: &mut LiteSVM, ix: Instruction, signers: &[&Keypair]) -> Stri
         Err(e) => {
             println!("Transaction failed as expected: {:?}", e.err);
             println!("{}", e.meta.pretty_logs());
-            svm.expire_blockhash();
             format!("{:#?} {}", e.err, e.meta.pretty_logs())
         }
     }
 }
 
-pub fn assert_program_paused(logs: &str) {
-    assert!(
-        logs.contains("ProgramPaused") || logs.contains("Program paused"),
-        "expected ProgramPaused, got: {logs}"
-    );
+// LiteSVM does not produce blocks. latest_blockhash() stays the same until something calls expire_blockhash()
+// if would retry a transaction it would have the same blockhash and there for the same signature and it would fail
+// so we simulate a blockhash advance by calling expire_blockhash()
+pub fn advance_blockhash(svm: &mut LiteSVM) {
+    svm.expire_blockhash();
+}
+
+pub fn assert_program_paused(env: &Env) {
+    let config: ProgramConfig = load(env, &env.program_config);
+    assert_eq!(config.status, ProgramStatus::Paused);
 }

@@ -1,7 +1,7 @@
 mod common;
 
 use {
-    common::{assert_program_paused, client, load, send, send_err, Env},
+    common::{assert_program_paused, client, load, send_tx_expect_ok, send_tx_expect_error, Env},
     r3_session_keys::state::{
         program_config::{ProgramConfig, ProgramStatus},
         session::Session,
@@ -19,29 +19,30 @@ fn test_pause_blocks_creates_and_unpause_restores() {
     let session_key = Keypair::new().pubkey();
 
     let (ix, user_smart_wallet, _) = client::create_smart_wallet(env.admin.pubkey(), user_wallet);
-    send(&mut env, ix);
+    send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
 
     let ix = client::pause(env.admin.pubkey());
-    send(&mut env, ix);
-    let config: ProgramConfig = load(&env, &env.program_config);
-    assert!(config.status == ProgramStatus::Paused);
+    send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
+    assert_program_paused(&env);
 
     let (ix, _, _) = client::create_smart_wallet(env.admin.pubkey(), other_user_wallet);
-    assert_program_paused(&send_err(&mut env, ix));
+    send_tx_expect_error(&mut env.svm, ix, &[&env.admin]);
+    assert_program_paused(&env);
 
     let (ix, _, _) = client::create_session(env.admin.pubkey(), user_smart_wallet, session_key);
-    assert_program_paused(&send_err(&mut env, ix));
+    send_tx_expect_error(&mut env.svm, ix, &[&env.admin]);
+    assert_program_paused(&env);
 
     let ix = client::unpause(env.admin.pubkey());
-    send(&mut env, ix);
+    send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
     let config: ProgramConfig = load(&env, &env.program_config);
     assert!(config.status == ProgramStatus::Active);
 
     let (ix, other_smart_wallet, _) = client::create_smart_wallet(env.admin.pubkey(), other_user_wallet);
-    send(&mut env, ix);
+    send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
     let _: UserSmartWallet = load(&env, &other_smart_wallet);
 
     let (ix, session, _) = client::create_session(env.admin.pubkey(), user_smart_wallet, session_key);
-    send(&mut env, ix);
+    send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
     let _: Session = load(&env, &session);
 }

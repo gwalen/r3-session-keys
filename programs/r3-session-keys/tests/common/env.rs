@@ -1,5 +1,5 @@
 use {
-    super::{client, send_tx},
+    super::{client, send_tx_expect_ok},
     anchor_lang::prelude::Pubkey,
     litesvm::LiteSVM,
     r3_session_keys::state::program_config::ProgramConfig,
@@ -27,7 +27,7 @@ impl Env {
         ));
         svm.add_program(program_id, bytes).unwrap();
         svm.airdrop(&admin.pubkey(), 1_000_000_000).unwrap();
-        send_tx(&mut svm, client::initialize(admin.pubkey()), &[&admin]);
+        send_tx_expect_ok(&mut svm, client::initialize(admin.pubkey()), &[&admin]);
 
         Self {
             svm,

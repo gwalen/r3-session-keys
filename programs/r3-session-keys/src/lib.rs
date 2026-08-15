@@ -5,6 +5,7 @@ pub mod instructions;
 pub mod state;
 pub mod utils;
 
+pub use instructions::approve_session::*;
 pub use instructions::create_session::*;
 pub use instructions::create_smart_wallet::*;
 pub use instructions::increment::*;
@@ -43,9 +44,17 @@ pub mod r3_session_keys {
     pub fn create_session(
         ctx: Context<CreateSession>,
         session_key: Pubkey,
-        smart_wallet: Pubkey,
+        _smart_wallet: Pubkey, // TODO: do not ass as param but as account in ix
         expires_at: i64,
     ) -> Result<()> {
-        handlers::create_session::handle(ctx, session_key, smart_wallet, expires_at)
+        handlers::create_session::handle(ctx, session_key, expires_at)
+    }
+
+    pub fn approve_session(
+        ctx: Context<ApproveSession>,
+        _session_key: Pubkey,
+        _smart_wallet: Pubkey, // TODO: do not ass as param but as account in ix
+    ) -> Result<()> {
+        handlers::approve_session::handle(ctx)
     }
 }

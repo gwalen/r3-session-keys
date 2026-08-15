@@ -74,11 +74,33 @@ pub fn create_session(
         .to_account_metas(None),
         instruction::CreateSession {
             session_key,
-            smart_wallet: user_smart_wallet,
+            _smart_wallet: user_smart_wallet,
             expires_at,
         },
     );
     (ix, session, bump)
+}
+
+pub fn approve_session(
+    session_owner: Pubkey,
+    user_smart_wallet: Pubkey,
+    session_key: Pubkey,
+) -> Instruction {
+    let (program_config, _) = ProgramConfig::find_pda();
+    let (session, _) = Session::find_pda(&user_smart_wallet, &session_key);
+    build_ix(
+        accounts::ApproveSession {
+            session_owner,
+            program_config,
+            user_smart_wallet,
+            session,
+        }
+        .to_account_metas(None),
+        instruction::ApproveSession {
+            _session_key: session_key,
+            _smart_wallet: user_smart_wallet,
+        },
+    )
 }
 
 pub fn pause(admin: Pubkey) -> Instruction {

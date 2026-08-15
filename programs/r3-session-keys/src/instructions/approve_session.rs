@@ -9,9 +9,8 @@ use crate::{
 
 
 #[derive(Accounts)]
-#[instruction(session_key: Pubkey, _smart_wallet: Pubkey)]
-pub struct CreateSession<'info> {
-    #[account(mut)]
+#[instruction(_session_key: Pubkey, _smart_wallet: Pubkey)]
+pub struct ApproveSession<'info> {
     pub session_owner: Signer<'info>,
 
     #[account(
@@ -19,21 +18,15 @@ pub struct CreateSession<'info> {
     )]
     pub program_config: Account<'info, ProgramConfig>,
 
-    // TODO: do not pass the smart_wallet as parameter but directly as account, so we can skip the address check and we have to desrilize it anyway
     #[account(
         address = _smart_wallet @ DappError::UserSmartWalletNotFound
     )]
     pub user_smart_wallet: Account<'info, UserSmartWallet>,
 
-    // seeds: [b"session", user_smart_wallet.to_bytes().as_ref(), session_key.to_bytes().as_ref()]
     #[account(
-        init,
-        payer = session_owner,
-        space = 8 + Session::INIT_SPACE,
-        seeds = [Session::SEED_PREFIX, user_smart_wallet.key().as_ref(), session_key.key().as_ref()],
-        bump
+        mut,
+        seeds = [Session::SEED_PREFIX, user_smart_wallet.key().as_ref(), _session_key.key().as_ref()],
+        bump = session.bump
     )]
     pub session: Account<'info, Session>,
-
-    pub system_program: Program<'info, System>,
 }

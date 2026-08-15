@@ -8,7 +8,6 @@ use crate::{
 pub fn handle(
     ctx: Context<CreateSession>,
     session_key: Pubkey,
-    _smart_wallet: Pubkey,
     expires_at: i64,
 ) -> Result<()> {
     ctx.accounts.session.set_inner(Session {

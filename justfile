@@ -1,9 +1,18 @@
+# Compile the on-chain program and IDL.
+build:
+    NO_DNA=1 anchor build
+
 # LiteSVM Rust tests (Anchor.toml default)
 rust:
     anchor test
-
+    
+# Run Rust tests with logs.
 rust-logs:
     anchor test --script test-rust-logs
+
+# Start a standalone surfnet in this terminal (no TUI). Pair with `just ts-surfpool`.
+surfpool:
+    surfpool start --no-tui
 
 # TypeScript Mocha tests. Surfpool is started here because
 # skip_local_validator = true keeps `anchor test` in-process for Rust.
@@ -17,4 +26,14 @@ ts:
     until curl -s http://127.0.0.1:8899 >/dev/null; do sleep 0.2; done
     anchor test --script test-ts --skip-local-validator --skip-deploy
 
-# TODO: add target to run on alredy started surfpool for transaction inspection
+# TypeScript Mocha tests against a surfpool already running (e.g. `just surfpool`).
+ts-surfpool:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    yarn
+    if ! curl -s http://127.0.0.1:8899 >/dev/null; then
+        echo "error: surfpool is not reachable at http://127.0.0.1:8899" >&2
+        echo "start it in another terminal with: just surfpool" >&2
+        exit 1
+    fi
+    anchor test --script test-ts --skip-local-validator --skip-deploy

@@ -1,5 +1,49 @@
 # R3 Session Keys Home assignment
 
+## Build and test
+
+This project uses [just](https://just.systems/) as the task runner. Install it with Homebrew, Cargo.
+
+```console
+brew install just
+or
+cargo install just
+```
+
+You also need [Anchor](https://www.anchor-lang.com/) 1.1.2, [Solana CLI](https://docs.solana.com/cli/install-solana-cli-tools) 3.1.x.
+Yarn and [Surfpool](https://surfpool.run) for running the TypeScript tests.
+
+
+Build the program:
+
+```console
+just build
+```
+
+Default tests are Rust integration tests that run in-process against [LiteSVM](https://github.com/LiteSVM/litesvm):
+
+```console
+just rust
+```
+
+TypeScript Mocha tests run against Surfpool. `just ts` starts Surfpool, runs the tests, and stops it. To inspect transactions, start Surfpool in one terminal and run the tests in another:
+
+```console
+just surfpool
+```
+
+```console
+just ts-surfpool
+```
+
+### Mock program
+
+Session-key tests treat an unaware target program as the CPI destination. That mock lives in a separate repository: [gwalen/r3-mock-program](https://github.com/gwalen/r3-mock-program). It is a small Anchor program (counter plus a simple token pool).
+
+This repo has the compiled binary and IDL copied after building the mock program.
+- `tests/fixtures/mock-program/mock_program.so`
+- `idls/mock_program.json`
+
 ## Framework choice
 This program uses Anchor version 1.1.2, the latest stable Anchor release at the time of writing. Anchor is the most widely adopted Solana program framework and 
 has an established ecosystem, documentation, tooling, and developer community.
@@ -24,4 +68,23 @@ Moving to Pinocchio could be considered as an optimization after the initial pha
 
 - Quasar: This is an Anchor V2 competitor developed by Blueshift. 
   It is still in beta and unaudited, so it is not yet production-ready. A stable release may make it worth reconsidering later.  
+
+## Potential future improvements
+
+
+1. Selective use of smart-wallet funds: Allow sessions to use only explicitly approved token mints, with per-transaction and cumulative spending limits. 
+
+2. Multiple target programs: Allow each session to use multiple target programs, each with its own list of allowed discriminators. This can be represented as a PDA-based map using the seeds [b"allowed_target", smart_wallet, session_key, target_program].
+
+3. Program specific policy modules: Add dedicated validation modules for sensitive target programs. For example, an SPL Token policy should normally reject Approve and ApproveChecked, because they grant delegate authority over a smart wallet’s token account.
+
+4. Account allowlists: Allow sessions to specify which accounts may be passed to an instruction and with which permissions (writability, is_signer). This would provide finer-grained control but would require more complex logic.
+
+5. Closing session accounts: Add an instruction to close expired or revoked session accounts and return their rent to the user.
+
+## Alternative solution
+Alternatively, the target program could be aware of the session-key system and use its validation macro or helper directly. This approach was developed by Gum and is now maintained by [MagicBlock](https://github.com/magicblock-labs/magicblock-engine-examples/tree/main/session-keys/anchor).
+However, it is not generic because every target program must be updated to support session keys. 
+My solution keeps the target program unaware of sessions and better demonstrates Solana native account abstraction through a smart-wallet PDA.
+
 

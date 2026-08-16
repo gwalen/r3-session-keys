@@ -7,8 +7,7 @@ use {
     r3_session_keys::{
         accounts, instruction,
         state::{
-            counter::Counter, program_config::ProgramConfig, session::Session,
-            user_smart_wallet::UserSmartWallet,
+            program_config::ProgramConfig, session::Session, user_smart_wallet::UserSmartWallet,
         },
     },
     solana_keypair::Keypair,
@@ -28,26 +27,14 @@ impl R3SessionKeysClient {
 
     pub fn initialize(&self, admin: Pubkey) -> Instruction {
         let (program_config, _) = ProgramConfig::find_pda();
-        let (counter, _) = Counter::find_pda();
         self.program
             .request()
             .accounts(accounts::Initialize {
                 admin,
                 program_config,
-                counter,
                 system_program: system_program::ID,
             })
             .args(instruction::Initialize {})
-            .instructions()
-            .remove(0)
-    }
-
-    pub fn increment(&self, authority: Pubkey) -> Instruction {
-        let (counter, _) = Counter::find_pda();
-        self.program
-            .request()
-            .accounts(accounts::Increment { counter, authority })
-            .args(instruction::Increment {})
             .instructions()
             .remove(0)
     }

@@ -8,13 +8,11 @@ pub mod utils;
 pub use instructions::approve_session::*;
 pub use instructions::create_session::*;
 pub use instructions::create_smart_wallet::*;
-pub use instructions::increment::*;
 pub use instructions::initialize::*;
 pub use instructions::pause::*;
 pub use instructions::revoke_session::*;
 pub use instructions::unpause::*;
 pub use instructions::execute_with_session::*;
-pub use utils::constants;
 pub use utils::errors;
 pub use utils::events;
 
@@ -26,10 +24,6 @@ pub mod r3_session_keys {
 
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
         handlers::initialize::handle(ctx)
-    }
-
-    pub fn increment(ctx: Context<Increment>) -> Result<()> {
-        handlers::increment::handle(ctx)
     }
 
     pub fn pause(ctx: Context<Pause>) -> Result<()> {

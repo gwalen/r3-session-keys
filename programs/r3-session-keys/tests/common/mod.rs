@@ -2,11 +2,16 @@
 
 pub mod client;
 mod env;
+pub mod mock_client;
 
 pub use env::Env;
 
 use {
-    anchor_lang::{prelude::Pubkey, solana_program::instruction::Instruction, AccountDeserialize},
+    anchor_lang::{
+        prelude::Pubkey,
+        solana_program::instruction::{AccountMeta, Instruction},
+        AccountDeserialize, InstructionData,
+    },
     litesvm::LiteSVM,
     r3_session_keys::state::program_config::{ProgramConfig, ProgramStatus},
     solana_keypair::Keypair,
@@ -14,6 +19,18 @@ use {
     solana_signer::Signer,
     solana_transaction::versioned::VersionedTransaction,
 };
+
+pub fn build_ix(
+    program_id: Pubkey,
+    accounts: Vec<AccountMeta>,
+    data: impl InstructionData,
+) -> Instruction {
+    Instruction {
+        program_id,
+        accounts,
+        data: data.data(),
+    }
+}
 
 fn signed_v0_tx(svm: &LiteSVM, ix: Instruction, signers: &[&Keypair]) -> VersionedTransaction {
     let payer = signers[0];

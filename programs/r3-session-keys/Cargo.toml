@@ -25,6 +25,7 @@ anchor-lang = "1.1.2"
 
 [dev-dependencies]
 litesvm = "0.10.0"
+mock-program = { path = "../../../mock-program/programs/mock-program", features = ["no-entrypoint", "idl-build"] }
 solana-message = "3.0.1"
 solana-transaction = "3.0.2"
 solana-signer = "3.0.0"

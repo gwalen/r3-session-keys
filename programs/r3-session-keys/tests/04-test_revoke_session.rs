@@ -10,7 +10,8 @@ use {
 
 #[test]
 fn test_revoke_session_changes_status() {
-    let mut env = Env::new();
+    let client = client::R3SessionKeysClient::new();
+    let mut env = Env::new(&client);
     let user = Keypair::new();
     let user_wallet_address = user.pubkey();
     let session_key = Keypair::new().pubkey();
@@ -20,10 +21,11 @@ fn test_revoke_session_changes_status() {
         .as_secs() as i64
         + 1000;
 
-    let (ix, user_smart_wallet, _) = client::create_smart_wallet(env.admin.pubkey(), user_wallet_address);
+    let (ix, user_smart_wallet, _) =
+        client.create_smart_wallet(env.admin.pubkey(), user_wallet_address);
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
 
-    let (ix, session, _) = client::create_session(
+    let (ix, session, _) = client.create_session(
         env.admin.pubkey(),
         user_smart_wallet,
         session_key,
@@ -36,7 +38,7 @@ fn test_revoke_session_changes_status() {
     let state: Session = load(&env, &session);
     assert_eq!(state.status, SessionStatus::WaitingForApproval);
 
-    let ix = client::revoke_session(user.pubkey(), user_smart_wallet, session_key);
+    let ix = client.revoke_session(user.pubkey(), user_smart_wallet, session_key);
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin, &user]);
 
     let state: Session = load(&env, &session);

@@ -42,14 +42,15 @@ fn initialize_mock_counter(
 
 #[test]
 fn test_execute_mock_increment_with_session() {
-    let mut env = Env::new();
+    let client = client::R3SessionKeysClient::new();
+    let mut env = Env::new(&client);
     load_mock_program(&mut env);
     let mock_client = mock_client::MockClient::new();
 
     let smart_wallet_owner = Keypair::new();
     let session_key = Keypair::new();
     let (create_wallet, user_smart_wallet, _) =
-        client::create_smart_wallet(env.admin.pubkey(), smart_wallet_owner.pubkey());
+        client.create_smart_wallet(env.admin.pubkey(), smart_wallet_owner.pubkey());
     send_tx_expect_ok(&mut env.svm, create_wallet, &[&env.admin]);
 
     initialize_mock_counter(&mut env, &mock_client, user_smart_wallet);
@@ -63,7 +64,7 @@ fn test_execute_mock_increment_with_session() {
         .unwrap()
         .as_secs() as i64
         + 1000;
-    let (create_session, _, _) = client::create_session(
+    let (create_session, _, _) = client.create_session(
         env.admin.pubkey(),
         user_smart_wallet,
         session_key.pubkey(),
@@ -73,7 +74,7 @@ fn test_execute_mock_increment_with_session() {
     );
     send_tx_expect_ok(&mut env.svm, create_session, &[&env.admin]);
 
-    let approve_session = client::approve_session(
+    let approve_session = client.approve_session(
         smart_wallet_owner.pubkey(),
         user_smart_wallet,
         session_key.pubkey(),
@@ -84,7 +85,7 @@ fn test_execute_mock_increment_with_session() {
         &[&env.admin, &smart_wallet_owner],
     );
 
-    let execute = client::execute_with_session(
+    let execute = client.execute_with_session(
         env.admin.pubkey(),
         session_key.pubkey(),
         user_smart_wallet,

@@ -1,13 +1,10 @@
+mod common;
+
 use {
-    anchor_lang::{
-        prelude::Pubkey,
-        solana_program::{instruction::Instruction, system_program},
-        AccountDeserialize, InstructionData, ToAccountMetas,
-    },
+    anchor_lang::{prelude::Pubkey, AccountDeserialize},
+    common::client::R3SessionKeysClient,
     litesvm::LiteSVM,
     r3_session_keys::{
-        accounts,
-        instruction,
         state::{
             counter::Counter,
             program_config::{ProgramConfig, ProgramStatus},
@@ -45,20 +42,11 @@ fn test_initialize() {
     ));
     svm.add_program(program_id, bytes).unwrap();
     svm.airdrop(&payer.pubkey(), 1_000_000_000).unwrap();
+    let client = R3SessionKeysClient::new();
 
     println!("XXX program id: {:?}", program_id);
 
-    let ix = Instruction::new_with_bytes(
-        program_id,
-        &instruction::Initialize {}.data(),
-        accounts::Initialize {
-            admin: payer.pubkey(),
-            program_config,
-            counter,
-            system_program: system_program::ID,
-        }
-        .to_account_metas(None),
-    );
+    let ix = client.initialize(payer.pubkey());
 
     let blockhash = svm.latest_blockhash();
     let msg = Message::new_with_blockhash(&[ix], Some(&payer.pubkey()), &blockhash);
@@ -79,15 +67,7 @@ fn test_initialize() {
     assert_eq!(program_config_state.status, ProgramStatus::Active);
     assert_eq!(program_config_state.bump, program_config_bump);
 
-    let ix = Instruction::new_with_bytes(
-        program_id,
-        &instruction::Increment {}.data(),
-        accounts::Increment {
-            counter,
-            authority: payer.pubkey(),
-        }
-        .to_account_metas(None),
-    );
+    let ix = client.increment(payer.pubkey());
 
     let blockhash = svm.latest_blockhash();
     let msg = Message::new_with_blockhash(&[ix], Some(&payer.pubkey()), &blockhash);

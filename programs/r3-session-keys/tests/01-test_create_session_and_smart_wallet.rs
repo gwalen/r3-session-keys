@@ -13,9 +13,10 @@ use {
 
 #[test]
 fn test_create_smart_wallet() {
-    let mut env = Env::new();
+    let client = client::R3SessionKeysClient::new();
+    let mut env = Env::new(&client);
     let user_wallet = Keypair::new().pubkey();
-    let (ix, user_smart_wallet, bump) = client::create_smart_wallet(env.admin.pubkey(), user_wallet);
+    let (ix, user_smart_wallet, bump) = client.create_smart_wallet(env.admin.pubkey(), user_wallet);
 
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
 
@@ -26,7 +27,8 @@ fn test_create_smart_wallet() {
 
 #[test]
 fn test_create_session() {
-    let mut env = Env::new();
+    let client = client::R3SessionKeysClient::new();
+    let mut env = Env::new(&client);
     let user_wallet = Keypair::new().pubkey();
     let session_key = Keypair::new().pubkey();
     let expires_at = SystemTime::now()
@@ -42,10 +44,10 @@ fn test_create_session() {
         0x02,
     ];
 
-    let (ix, user_smart_wallet, _) = client::create_smart_wallet(env.admin.pubkey(), user_wallet);
+    let (ix, user_smart_wallet, _) = client.create_smart_wallet(env.admin.pubkey(), user_wallet);
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
 
-    let (ix, session, bump) = client::create_session(
+    let (ix, session, bump) = client.create_session(
         env.admin.pubkey(),
         user_smart_wallet,
         session_key,

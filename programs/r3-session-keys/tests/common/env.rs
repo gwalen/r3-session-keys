@@ -15,7 +15,7 @@ pub struct Env {
 }
 
 impl Env {
-    pub fn new() -> Self {
+    pub fn new(client: &client::R3SessionKeysClient) -> Self {
         let program_id = r3_session_keys::id();
         let admin = Keypair::new();
         let (program_config, _) = ProgramConfig::find_pda();
@@ -27,7 +27,7 @@ impl Env {
         ));
         svm.add_program(program_id, bytes).unwrap();
         svm.airdrop(&admin.pubkey(), 1_000_000_000).unwrap();
-        send_tx_expect_ok(&mut svm, client::initialize(admin.pubkey()), &[&admin]);
+        send_tx_expect_ok(&mut svm, client.initialize(admin.pubkey()), &[&admin]);
 
         Self {
             svm,

@@ -15,7 +15,9 @@ pub struct CreateSession<'info> {
     pub session_executor: Signer<'info>,
 
     #[account(
-        constraint = program_config.status == ProgramStatus::Active @ DappError::ProgramPaused
+        seeds = [ProgramConfig::SEED_PREFIX],
+        constraint = program_config.status == ProgramStatus::Active @ DappError::ProgramPaused,
+        bump = program_config.bump,
     )]
     pub program_config: Account<'info, ProgramConfig>,
 

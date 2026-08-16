@@ -83,7 +83,7 @@ fn validate_target_instruction<'info>(
         instruction_data.len() >= ctx.accounts.session.discriminator_size as usize,
         DappError::EmptyInstructionData
     );
-    // we do not in proxied call to make call to it self (solana reentrancy would prevent it but we add it for checks completeness)
+    // we do not in proxied call to make call to it self A->A (is allowed in solana, A->B->A is not this is reentrancy)
     require!(
         ctx.accounts.target_program.key() != crate::ID,
         DappError::NotAllowedToCallSmartWalletProgram
@@ -96,37 +96,39 @@ fn validate_target_instruction<'info>(
 }
 
 fn validate_instruction_accounts<'info>(ctx: &Context<ExecuteWithSession<'info>>) -> Result<()> {
-    // It not allowed for remaining accounts to contain program_config or session
-    // because malicious caller could override the privileges to this accounts by making
-    // them writable and modify program_config, session
-    require!(
-        !contains_account(ctx.remaining_accounts, &ctx.accounts.program_config.key()),
-        DappError::RemainingAccountsContainsProgramConfig
-    );
-    require!(
-        !contains_account(ctx.remaining_accounts, &ctx.accounts.session.key()),
-        DappError::RemainingAccountsContainsSession
-    );
-    // It not allowed for remaining accounts to contain session_key, it is for session use only
+    // Remaining accounts owned by this program may only be this user_smart_wallet,
+    // and that copy must be read-only. session_key is not program-owned and must not
+    // be forwarded into the CPI.
+    // Wroth nothing that pda account can only by modified by program that owns them, so target program could not change accounts of this program
+    // nevertheless we check for it to fail fast and get clear error message
     require!(
         !contains_account(ctx.remaining_accounts, &ctx.accounts.session_key.key()),
         DappError::RemainingAccountsContainsSessionKey
     );
 
-    // for smart_wallet account it is more complex as caller will have to pass it account list
-    // because it will be a singer for invoke_signed (tx proxy)
-    // but it can not be writable and must be only one
-    let smart_wallet_accounts_found = find_all_accounts(ctx.remaining_accounts, &ctx.accounts.user_smart_wallet.key());
+    let user_smart_wallet_key = ctx.accounts.user_smart_wallet.key();
+    let mut smart_wallet_count = 0usize;
+    for account in ctx.remaining_accounts.iter() {
+        if account.owner == &crate::ID {
+            require!(
+                account.key() == user_smart_wallet_key,
+                DappError::RemainingAccountsContainsProgramOwnedAccount
+            );
+            require!(
+                !account.is_writable,
+                DappError::UserSmartWalletAccountIsWritable
+            );
+            smart_wallet_count += 1;
+        }
+    }
     require!(
-        smart_wallet_accounts_found.len() == 1,
+        smart_wallet_count > 0,
+        DappError::UserSmartWalletNotFound
+    );
+    require!(
+        smart_wallet_count == 1,
         DappError::MultipleUserSmartWalletAccounts
     );
-    require!(
-        !smart_wallet_accounts_found[0].is_writable,
-        DappError::UserSmartWalletAccountIsWritable
-    );
-
-    // TODO: double check if any other accounts should be checked here (- imo no)
 
     Ok(())
 }
@@ -161,19 +163,6 @@ fn contains_account<'info>(
         }
     }
     false
-}
-
-fn find_all_accounts<'a, 'info>(
-    remaining_accounts: &'a [AccountInfo<'info>],
-    account_to_find: &Pubkey,
-) -> Vec<&'a AccountInfo<'info>> {
-    let mut found = Vec::new();
-    for account in remaining_accounts {
-        if account.key() == *account_to_find {
-            found.push(account);
-        }
-    }
-    found
 }
 
 fn create_account_meta(target_account: &AccountInfo<'_>) -> AccountMeta {

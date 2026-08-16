@@ -13,8 +13,10 @@ pub struct CreateSmartWallet<'info> {
     pub admin: Signer<'info>,
 
     #[account(
+        seeds = [ProgramConfig::SEED_PREFIX],
         has_one = admin @ DappError::UnauthorizedAdmin,
-        constraint = program_config.status == ProgramStatus::Active @ DappError::ProgramPaused
+        constraint = program_config.status == ProgramStatus::Active @ DappError::ProgramPaused,
+        bump = program_config.bump,
     )]
     pub program_config: Account<'info, ProgramConfig>,
 

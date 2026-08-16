@@ -30,10 +30,8 @@ pub enum DappError {
     EmptyInstructionData,
     #[msg("Not allowed to call smart wallet program")]
     NotAllowedToCallSmartWalletProgram,
-    #[msg("Remaining accounts contains program config")]
-    RemainingAccountsContainsProgramConfig,
-    #[msg("Remaining accounts contains session")]
-    RemainingAccountsContainsSession,
+    #[msg("Remaining accounts contains an unexpected program-owned account")]
+    RemainingAccountsContainsProgramOwnedAccount,
     #[msg("Remaining accounts contains session key")]
     RemainingAccountsContainsSessionKey,
     #[msg("Multiple user smart wallet accounts found")]

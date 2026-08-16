@@ -35,11 +35,24 @@ fn test_create_session() {
         .as_secs() as i64
         + 1000;
 
+    // Two Anchor-style 8-byte instruction discriminators concatenated.
+    let discriminator_len = 8u8;
+    let allowed_instructions_discriminators = vec![
+        0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x01,
+        0x02,
+    ];
+
     let (ix, user_smart_wallet, _) = client::create_smart_wallet(env.admin.pubkey(), user_wallet);
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
 
-    let (ix, session, bump) =
-        client::create_session(env.admin.pubkey(), user_smart_wallet, session_key, expires_at);
+    let (ix, session, bump) = client::create_session(
+        env.admin.pubkey(),
+        user_smart_wallet,
+        session_key,
+        expires_at,
+        allowed_instructions_discriminators.clone(),
+        discriminator_len,
+    );
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
 
     let state: Session = load(&env, &session);
@@ -48,6 +61,11 @@ fn test_create_session() {
     assert_eq!(state.expires_at, expires_at);
     // assert!(state.allowed_writeable_mint_list.is_empty());
     // assert!(state.mint_limits.is_empty());
+    assert_eq!(
+        state.allowed_instructions_discriminators,
+        allowed_instructions_discriminators
+    );
+    assert_eq!(state.discriminator_len, discriminator_len);
     assert!(state.status == SessionStatus::WaitingForApproval);
     assert_eq!(state.nonce, 0);
     assert_eq!(state.bump, bump);

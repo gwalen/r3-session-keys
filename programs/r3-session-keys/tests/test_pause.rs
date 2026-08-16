@@ -25,11 +25,20 @@ fn test_pause_blocks_creates_and_unpause_restores() {
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
     assert_program_paused(&env);
 
+    // program paused so other program functions should fail
+
     let (ix, _, _) = client::create_smart_wallet(env.admin.pubkey(), other_user_wallet);
     send_tx_expect_error(&mut env.svm, ix, &[&env.admin]);
     assert_program_paused(&env);
 
-    let (ix, _, _) = client::create_session(env.admin.pubkey(), user_smart_wallet, session_key, 0);
+    let (ix, _, _) = client::create_session(
+        env.admin.pubkey(),
+        user_smart_wallet,
+        session_key,
+        0,
+        vec![],
+        8,
+    );
     send_tx_expect_error(&mut env.svm, ix, &[&env.admin]);
     assert_program_paused(&env);
 
@@ -38,11 +47,20 @@ fn test_pause_blocks_creates_and_unpause_restores() {
     let config: ProgramConfig = load(&env, &env.program_config);
     assert!(config.status == ProgramStatus::Active);
 
+    // program unpaused so other program functions should succeed
+
     let (ix, other_smart_wallet, _) = client::create_smart_wallet(env.admin.pubkey(), other_user_wallet);
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
     let _: UserSmartWallet = load(&env, &other_smart_wallet);
 
-    let (ix, session, _) = client::create_session(env.admin.pubkey(), user_smart_wallet, session_key, 0);
+    let (ix, session, _) = client::create_session(
+        env.admin.pubkey(),
+        user_smart_wallet,
+        session_key,
+        0,
+        vec![],
+        8,
+    );
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
     let _: Session = load(&env, &session);
 }

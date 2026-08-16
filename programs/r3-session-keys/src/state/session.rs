@@ -22,6 +22,12 @@ pub struct Session {
     // #[max_len(10)]
     // pub mint_limits: Vec<u64>,
 
+    // For AnchorV1 that would be 10 discriminators (10 different instructions)
+    #[max_len(80)]
+    pub allowed_instructions_discriminators: Vec<u8>,
+    // AnchorV1 has 8 bytes discriminator, Quasar 1 byte, SPL token 1, they can vary
+    pub discriminator_len: u8,
+
     // TODO: after revoke, no more operations allowed and than user can close the session and reclaim rent
     pub status: SessionStatus,
     pub nonce: u64,

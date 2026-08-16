@@ -22,8 +22,14 @@ fn test_approve_session_changes_status() {
     let (ix, user_smart_wallet, _) = client::create_smart_wallet(env.admin.pubkey(), user_wallet);
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
 
-    let (ix, session, _) =
-        client::create_session(env.admin.pubkey(), user_smart_wallet, session_key, expires_at);
+    let (ix, session, _) = client::create_session(
+        env.admin.pubkey(),
+        user_smart_wallet,
+        session_key,
+        expires_at,
+        vec![],
+        8,
+    );
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
 
     let state: Session = load(&env, &session);

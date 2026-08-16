@@ -95,8 +95,30 @@ pub fn approve_session(
             user_smart_wallet,
             session,
         }
-        .to_account_metas(None),
+        .to_account_metas(None), // TODO: ...
         instruction::ApproveSession {
+            _session_key: session_key,
+            _smart_wallet: user_smart_wallet,
+        },
+    )
+}
+
+pub fn revoke_session(
+    session_owner: Pubkey,
+    user_smart_wallet: Pubkey,
+    session_key: Pubkey,
+) -> Instruction {
+    let (program_config, _) = ProgramConfig::find_pda();
+    let (session, _) = Session::find_pda(&user_smart_wallet, &session_key);
+    build_ix(
+        accounts::RevokeSession {
+            session_owner,
+            program_config,
+            user_smart_wallet,
+            session,
+        }
+        .to_account_metas(None),
+        instruction::RevokeSession {
             _session_key: session_key,
             _smart_wallet: user_smart_wallet,
         },

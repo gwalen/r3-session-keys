@@ -7,6 +7,7 @@ pub mod utils;
 
 pub use instructions::approve_session::*;
 pub use instructions::create_session::*;
+pub use instructions::revoke_session::*;
 pub use instructions::create_smart_wallet::*;
 pub use instructions::increment::*;
 pub use instructions::initialize::*;
@@ -57,4 +58,17 @@ pub mod r3_session_keys {
     ) -> Result<()> {
         handlers::approve_session::handle(ctx)
     }
+
+    pub fn revoke_session(
+        ctx: Context<RevokeSession>,
+        _session_key: Pubkey,
+        _smart_wallet: Pubkey, // TODO: do not ass as param but as account in ix
+    ) -> Result<()> {
+        handlers::revoke_session::handle(ctx)
+    }
+
+    // TODO
+    // mvoe target_program: Pubkey,
+// allowed_discriminators: Vec<[u8; 8]>,
+// into session
 }

@@ -33,5 +33,5 @@ pub struct RevokeSession<'info> {
         seeds = [Session::SEED_PREFIX, user_smart_wallet.key().as_ref(), _session_key.key().as_ref()],
         bump = session.bump
     )]
-    pub session: Account<'info, Session>,
+    pub session: Box<Account<'info, Session>>,
 }

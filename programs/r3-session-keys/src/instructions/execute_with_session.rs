@@ -28,7 +28,7 @@ pub struct ExecuteWithSession<'info> {
         constraint = session.status == SessionStatus::Approved @ DappError::SessionNotApproved,
         bump = session.bump
     )]
-    pub session: Account<'info, Session>,
+    pub session: Box<Account<'info, Session>>,
 
     /// We need to pass it as it will be a target program cpi call signer
     #[account(

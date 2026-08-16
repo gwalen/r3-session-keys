@@ -32,7 +32,7 @@ pub struct CreateSession<'info> {
         seeds = [Session::SEED_PREFIX, user_smart_wallet.key().as_ref(), session_key.key().as_ref()],
         bump
     )]
-    pub session: Account<'info, Session>,
+    pub session: Box<Account<'info, Session>>,
 
     pub system_program: Program<'info, System>,
 }

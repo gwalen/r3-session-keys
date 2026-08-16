@@ -16,6 +16,8 @@ use {
     solana_transaction::versioned::VersionedTransaction,
 };
 
+pub const TARGET_PROGRAM_PLACEHOLDER: Pubkey = anchor_lang::solana_program::system_program::ID;
+
 fn signed_v0_tx(svm: &LiteSVM, ix: Instruction, signers: &[&Keypair]) -> VersionedTransaction {
     let payer = signers[0];
     let msg = v0::Message::try_compile(

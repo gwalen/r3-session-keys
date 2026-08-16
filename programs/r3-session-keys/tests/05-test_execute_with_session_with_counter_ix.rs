@@ -2,7 +2,10 @@ mod common;
 
 use {
     anchor_lang::{prelude::Clock, AccountSerialize},
-    common::{client, load, mock_client, send_tx_expect_error, send_tx_expect_ok, Env},
+    common::{
+        client, load, mock_client, send_tx_expect_error, send_tx_expect_ok, Env,
+        TARGET_PROGRAM_PLACEHOLDER,
+    },
     mock_client::mock_program::accounts::Counter,
     solana_keypair::Keypair,
     solana_signer::Signer,
@@ -131,7 +134,7 @@ fn test_execute_rejects_target_program_not_authorized_by_session() {
         env.admin.pubkey(),
         user_smart_wallet,
         session_key.pubkey(),
-        anchor_lang::system_program::ID,
+        TARGET_PROGRAM_PLACEHOLDER,
         expires_at,
         increment_discriminator.clone(),
         u8::try_from(increment_discriminator.len()).unwrap(),

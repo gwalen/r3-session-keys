@@ -2,9 +2,8 @@ use anchor_lang::prelude::*;
 
 use crate::instructions::execute_with_session::ExecuteWithSession;
 use crate::{
-    state::{program_config::ProgramConfig, session::Session, user_smart_wallet::UserSmartWallet},
+    state::user_smart_wallet::UserSmartWallet,
     utils::{
-        common::read_array_element,
         errors::DappError,
         events::SessionExecuted,
     },

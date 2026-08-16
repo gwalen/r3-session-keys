@@ -1,7 +1,7 @@
 mod common;
 
 use {
-    common::{client, load, send_tx_expect_ok, Env},
+    common::{client, load, send_tx_expect_ok, Env, TARGET_PROGRAM_PLACEHOLDER},
     r3_session_keys::state::session::{Session, SessionStatus},
     solana_keypair::Keypair,
     solana_signer::Signer,
@@ -32,7 +32,7 @@ fn test_revoke_session_changes_status() {
         env.admin.pubkey(),
         user_smart_wallet,
         session_key,
-        anchor_lang::system_program::ID,
+        TARGET_PROGRAM_PLACEHOLDER,
         expires_at,
         vec![],
         8,

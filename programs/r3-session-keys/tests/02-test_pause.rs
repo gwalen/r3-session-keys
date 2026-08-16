@@ -1,7 +1,10 @@
 mod common;
 
 use {
-    common::{assert_program_paused, client, load, send_tx_expect_error, send_tx_expect_ok, Env},
+    common::{
+        assert_program_paused, client, load, send_tx_expect_error, send_tx_expect_ok, Env,
+        TARGET_PROGRAM_PLACEHOLDER,
+    },
     r3_session_keys::state::{
         program_config::{ProgramConfig, ProgramStatus},
         session::Session,
@@ -39,7 +42,7 @@ fn test_pause_blocks_creates_and_unpause_restores() {
         env.admin.pubkey(),
         user_smart_wallet,
         session_key,
-        anchor_lang::system_program::ID,
+        TARGET_PROGRAM_PLACEHOLDER,
         0,
         vec![],
         8,
@@ -63,7 +66,7 @@ fn test_pause_blocks_creates_and_unpause_restores() {
         env.admin.pubkey(),
         user_smart_wallet,
         session_key,
-        anchor_lang::system_program::ID,
+        TARGET_PROGRAM_PLACEHOLDER,
         0,
         vec![],
         8,

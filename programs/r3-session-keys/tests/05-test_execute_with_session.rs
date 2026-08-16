@@ -3,7 +3,7 @@ mod common;
 use {
     anchor_lang::AccountSerialize,
     common::{client, load, mock_client, send_tx_expect_ok, Env},
-    mock_program::state::Counter,
+    mock_client::mock_program::accounts::Counter,
     solana_keypair::Keypair,
     solana_signer::Signer,
     std::time::{SystemTime, UNIX_EPOCH},
@@ -14,7 +14,9 @@ fn load_mock_program(env: &mut Env) {
         env!("CARGO_MANIFEST_DIR"),
         "/../../tests/fixtures/mock-program/mock_program.so"
     ));
-    env.svm.add_program(mock_program::ID, bytes).unwrap();
+    env.svm
+        .add_program(mock_client::mock_program::ID, bytes)
+        .unwrap();
 }
 
 fn initialize_mock_counter(env: &mut Env, authority: anchor_lang::prelude::Pubkey) {
@@ -48,7 +50,7 @@ fn test_execute_mock_increment_with_session() {
     initialize_mock_counter(&mut env, user_smart_wallet);
     let mock_counter = mock_client::counter_pda();
     let increment = mock_client::increment(user_smart_wallet);
-    let increment_discriminator = mock_client::instruction_discriminator("increment");
+    let increment_discriminator = mock_client::increment_discriminator().to_vec();
     assert!(increment.data.starts_with(&increment_discriminator));
 
     let expires_at = SystemTime::now()

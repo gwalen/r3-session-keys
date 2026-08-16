@@ -28,6 +28,8 @@ pub fn build_ix(
     Instruction {
         program_id,
         accounts,
+        // Calling .data() produces: instruction discriminator + Borsh-serialized arguments
+        // if there is not arguments it will be just discriminator
         data: data.data(),
     }
 }

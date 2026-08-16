@@ -43,7 +43,10 @@ fn initialize_mock_counter(
 #[test]
 fn test_execute_mock_increment_with_session() {
     let client = client::R3SessionKeysClient::new();
-    let mut env = Env::new(&client);
+    let mut env = Env::new();
+    let initialize_ix = client.initialize(env.admin.pubkey());
+    send_tx_expect_ok(&mut env.svm, initialize_ix, &[&env.admin]);
+
     load_mock_program(&mut env);
     let mock_client = mock_client::MockClient::new();
 

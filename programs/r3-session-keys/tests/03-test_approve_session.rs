@@ -11,7 +11,10 @@ use {
 #[test]
 fn test_approve_session_changes_status() {
     let client = client::R3SessionKeysClient::new();
-    let mut env = Env::new(&client);
+    let mut env = Env::new();
+    let initialize_ix = client.initialize(env.admin.pubkey());
+    send_tx_expect_ok(&mut env.svm, initialize_ix, &[&env.admin]);
+
     let user = Keypair::new();
     let user_wallet_address = user.pubkey();
     let session_key = Keypair::new().pubkey();

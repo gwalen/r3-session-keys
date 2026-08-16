@@ -14,7 +14,10 @@ use {
 #[test]
 fn test_pause_blocks_creates_and_unpause_restores() {
     let client = client::R3SessionKeysClient::new();
-    let mut env = Env::new(&client);
+    let mut env = Env::new();
+    let initialize_ix = client.initialize(env.admin.pubkey());
+    send_tx_expect_ok(&mut env.svm, initialize_ix, &[&env.admin]);
+
     let user_wallet = Keypair::new().pubkey();
     let other_user_wallet = Keypair::new().pubkey();
     let session_key = Keypair::new().pubkey();

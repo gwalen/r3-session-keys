@@ -14,7 +14,10 @@ use {
 #[test]
 fn test_create_smart_wallet() {
     let client = client::R3SessionKeysClient::new();
-    let mut env = Env::new(&client);
+    let mut env = Env::new();
+    let initialize_ix = client.initialize(env.admin.pubkey());
+    send_tx_expect_ok(&mut env.svm, initialize_ix, &[&env.admin]);
+
     let user_wallet = Keypair::new().pubkey();
     let (ix, user_smart_wallet, bump) = client.create_smart_wallet(env.admin.pubkey(), user_wallet);
 
@@ -28,7 +31,10 @@ fn test_create_smart_wallet() {
 #[test]
 fn test_create_session() {
     let client = client::R3SessionKeysClient::new();
-    let mut env = Env::new(&client);
+    let mut env = Env::new();
+    let initialize_ix = client.initialize(env.admin.pubkey());
+    send_tx_expect_ok(&mut env.svm, initialize_ix, &[&env.admin]);
+
     let user_wallet = Keypair::new().pubkey();
     let session_key = Keypair::new().pubkey();
     let expires_at = SystemTime::now()

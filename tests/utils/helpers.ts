@@ -177,7 +177,11 @@ export async function sendExpectError(pendingSignature: Promise<string>): Promis
   } catch (e: any) {
     const logs: string[] = e.logs ?? e.transactionLogs ?? [];
     const error = `${e}\n${logs.join("\n")}`;
-    console.log("Transaction failed as expected: ", error);
+    // The logs are noisy enough to break up the mocha reporter, so only print them
+    // when debugging: `TEST_LOGS=1 just ts`.
+    if (process.env.TEST_LOGS) {
+      console.log("Transaction failed as expected: ", error);
+    }
     return error;
   }
 

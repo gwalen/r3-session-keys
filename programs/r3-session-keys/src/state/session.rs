@@ -1,16 +1,12 @@
 use anchor_lang::prelude::*;
+use crate::utils::common::read_array_element;
 
 // seeds: [b"session", user_smart_wallet.to_bytes().as_ref(), session_key.to_bytes().as_ref()]
 #[account]
 #[derive(InitSpace)]
 pub struct Session {
-    // pub user_smart_wallet: Pubkey, // this will be in the seed
-    // who will be allow to use this session, when excutiong the session there will be check if signer is the session owner
-    // and another if session owner is using required session key which he earlier reads from blockchain after using creates a session for him 
-    // TODO: --NO if user creates a session than use has th ehpemeral session key that must be used for signing
-    //         maybe we all session_owner to create a session but only user can approve it or revoke it 
-    //         before session is approved is can not be used
-    pub session_owner: Pubkey,
+    // Bot / external caller allowed to execute this session after the smart-wallet owner approves.
+    pub session_executor: Pubkey,
     pub session_key: Pubkey,
     pub expires_at: i64,
 
@@ -26,7 +22,7 @@ pub struct Session {
     #[max_len(80)]
     pub allowed_instructions_discriminators: Vec<u8>,
     // AnchorV1 has 8 bytes discriminator, Quasar 1 byte, SPL token 1, they can vary
-    pub discriminator_len: u8,
+    pub discriminator_size: u8,
 
     // TODO: after revoke, no more operations allowed and than user can close the session and reclaim rent
     pub status: SessionStatus,
@@ -48,6 +44,17 @@ impl Session {
             ],
             &crate::ID,
         )
+    }
+
+    pub fn parse_discriminators(&self) -> Vec<Vec<u8>> {
+        let mut discriminators = Vec::new();
+        let disc_size = self.discriminator_size as usize;
+        let disc_vec_len = self.allowed_instructions_discriminators.len() / disc_size;
+        for i in 0..disc_vec_len {
+            let disc = read_array_element(&self.allowed_instructions_discriminators, i * disc_size, disc_size);
+            discriminators.push(disc.to_vec());
+        }
+        discriminators
     }
 }
 

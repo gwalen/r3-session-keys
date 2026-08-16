@@ -20,7 +20,7 @@ fn test_create_smart_wallet() {
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
 
     let state: UserSmartWallet = load(&env, &user_smart_wallet);
-    assert_eq!(state.owner, user_wallet);
+    assert_eq!(state.smart_wallet_owner, user_wallet);
     assert_eq!(state.bump, bump);
 }
 
@@ -56,7 +56,7 @@ fn test_create_session() {
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
 
     let state: Session = load(&env, &session);
-    assert_eq!(state.session_owner, env.admin.pubkey());
+    assert_eq!(state.session_executor, env.admin.pubkey());
     assert_eq!(state.session_key, session_key);
     assert_eq!(state.expires_at, expires_at);
     // assert!(state.allowed_writeable_mint_list.is_empty());
@@ -65,7 +65,7 @@ fn test_create_session() {
         state.allowed_instructions_discriminators,
         allowed_instructions_discriminators
     );
-    assert_eq!(state.discriminator_len, discriminator_len);
+    assert_eq!(state.discriminator_size, discriminator_len);
     assert!(state.status == SessionStatus::WaitingForApproval);
     assert_eq!(state.nonce, 0);
     assert_eq!(state.bump, bump);

@@ -13,14 +13,14 @@ pub fn handle(
     discriminator_len: u8,
 ) -> Result<()> {
     ctx.accounts.session.set_inner(Session {
-        session_owner: ctx.accounts.session_owner.key(),
+        session_executor: ctx.accounts.session_executor.key(),
         session_key,
         expires_at,
         // TODO: implement later if enough time, or just one mint
         // allowed_writeable_mint_list: vec![],
         // mint_limits: vec![],
         allowed_instructions_discriminators,
-        discriminator_len,
+        discriminator_size: discriminator_len,
         status: SessionStatus::WaitingForApproval,
         nonce: 0,
         bump: ctx.bumps.session,

@@ -11,7 +11,8 @@ use {
 #[test]
 fn test_approve_session_changes_status() {
     let mut env = Env::new();
-    let user_wallet = Keypair::new().pubkey();
+    let user = Keypair::new();
+    let user_wallet_address = user.pubkey();
     let session_key = Keypair::new().pubkey();
     let expires_at = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -19,7 +20,7 @@ fn test_approve_session_changes_status() {
         .as_secs() as i64
         + 1000;
 
-    let (ix, user_smart_wallet, _) = client::create_smart_wallet(env.admin.pubkey(), user_wallet);
+    let (ix, user_smart_wallet, _) = client::create_smart_wallet(env.admin.pubkey(), user_wallet_address);
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
 
     let (ix, session, _) = client::create_session(
@@ -35,8 +36,8 @@ fn test_approve_session_changes_status() {
     let state: Session = load(&env, &session);
     assert_eq!(state.status, SessionStatus::WaitingForApproval);
 
-    let ix = client::approve_session(env.admin.pubkey(), user_smart_wallet, session_key);
-    send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
+    let ix = client::approve_session(user.pubkey(), user_smart_wallet, session_key);
+    send_tx_expect_ok(&mut env.svm, ix, &[&env.admin, &user]);
 
     let state: Session = load(&env, &session);
     assert_eq!(state.status, SessionStatus::Approved);

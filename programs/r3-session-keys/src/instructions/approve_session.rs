@@ -9,17 +9,20 @@ use crate::{
 
 
 #[derive(Accounts)]
-#[instruction(_session_key: Pubkey, _smart_wallet: Pubkey)]
+#[instruction(_session_key: Pubkey)]
 pub struct ApproveSession<'info> {
-    pub session_owner: Signer<'info>,
+    pub smart_wallet_owner: Signer<'info>,
 
     #[account(
         constraint = program_config.status == ProgramStatus::Active @ DappError::ProgramPaused
     )]
     pub program_config: Account<'info, ProgramConfig>,
 
+    // deserialize will check if accounts exists (program ownership and structure)
     #[account(
-        address = _smart_wallet @ DappError::UserSmartWalletNotFound
+        seeds = [UserSmartWallet::SEED_PREFIX, smart_wallet_owner.key().as_ref()],
+        constraint = user_smart_wallet.smart_wallet_owner == smart_wallet_owner.key() @ DappError::UnauthorizedSmartWalletOwner,
+        bump = user_smart_wallet.bump,
     )]
     pub user_smart_wallet: Account<'info, UserSmartWallet>,
 

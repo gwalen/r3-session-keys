@@ -16,3 +16,5 @@ ts:
     # NO_DNA=1 surfpool start --no-tui --no-studio & trap 'kill $! 2>/dev/null || true' EXIT
     until curl -s http://127.0.0.1:8899 >/dev/null; do sleep 0.2; done
     anchor test --script test-ts --skip-local-validator --skip-deploy
+
+# TODO: add target to run on alredy started surfpool for transaction inspection

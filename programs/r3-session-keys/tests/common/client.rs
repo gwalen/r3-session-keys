@@ -56,7 +56,7 @@ pub fn create_smart_wallet(admin: Pubkey, user_wallet: Pubkey) -> (Instruction, 
 }
 
 pub fn create_session(
-    session_owner: Pubkey,
+    session_executor: Pubkey,
     user_smart_wallet: Pubkey,
     session_key: Pubkey,
     expires_at: i64,
@@ -67,7 +67,7 @@ pub fn create_session(
     let (session, bump) = Session::find_pda(&user_smart_wallet, &session_key);
     let ix = build_ix(
         accounts::CreateSession {
-            session_owner,
+            session_executor,
             program_config,
             user_smart_wallet,
             session,
@@ -76,7 +76,6 @@ pub fn create_session(
         .to_account_metas(None),
         instruction::CreateSession {
             session_key,
-            _smart_wallet: user_smart_wallet,
             expires_at,
             allowed_instructions_discriminators,
             discriminator_len,
@@ -86,7 +85,7 @@ pub fn create_session(
 }
 
 pub fn approve_session(
-    session_owner: Pubkey,
+    smart_wallet_owner: Pubkey,
     user_smart_wallet: Pubkey,
     session_key: Pubkey,
 ) -> Instruction {
@@ -94,7 +93,7 @@ pub fn approve_session(
     let (session, _) = Session::find_pda(&user_smart_wallet, &session_key);
     build_ix(
         accounts::ApproveSession {
-            session_owner,
+            smart_wallet_owner,
             program_config,
             user_smart_wallet,
             session,
@@ -102,13 +101,12 @@ pub fn approve_session(
         .to_account_metas(None), // TODO: ...
         instruction::ApproveSession {
             _session_key: session_key,
-            _smart_wallet: user_smart_wallet,
         },
     )
 }
 
 pub fn revoke_session(
-    session_owner: Pubkey,
+    smart_wallet_owner: Pubkey,
     user_smart_wallet: Pubkey,
     session_key: Pubkey,
 ) -> Instruction {
@@ -116,7 +114,7 @@ pub fn revoke_session(
     let (session, _) = Session::find_pda(&user_smart_wallet, &session_key);
     build_ix(
         accounts::RevokeSession {
-            session_owner,
+            smart_wallet_owner,
             program_config,
             user_smart_wallet,
             session,
@@ -124,7 +122,6 @@ pub fn revoke_session(
         .to_account_metas(None),
         instruction::RevokeSession {
             _session_key: session_key,
-            _smart_wallet: user_smart_wallet,
         },
     )
 }

@@ -13,6 +13,7 @@ pub use instructions::initialize::*;
 pub use instructions::pause::*;
 pub use instructions::revoke_session::*;
 pub use instructions::unpause::*;
+pub use instructions::execute_with_session::*;
 pub use utils::constants;
 pub use utils::errors;
 
@@ -45,7 +46,6 @@ pub mod r3_session_keys {
     pub fn create_session(
         ctx: Context<CreateSession>,
         session_key: Pubkey,
-        _smart_wallet: Pubkey, // TODO: do not ass as param but as account in ix
         expires_at: i64,
         allowed_instructions_discriminators: Vec<u8>,
         discriminator_len: u8,
@@ -62,7 +62,6 @@ pub mod r3_session_keys {
     pub fn approve_session(
         ctx: Context<ApproveSession>,
         _session_key: Pubkey,
-        _smart_wallet: Pubkey, // TODO: do not ass as param but as account in ix
     ) -> Result<()> {
         handlers::approve_session::handle(ctx)
     }
@@ -70,13 +69,15 @@ pub mod r3_session_keys {
     pub fn revoke_session(
         ctx: Context<RevokeSession>,
         _session_key: Pubkey,
-        _smart_wallet: Pubkey, // TODO: do not ass as param but as account in ix
     ) -> Result<()> {
         handlers::revoke_session::handle(ctx)
     }
 
-    // TODO
-    // mvoe target_program: Pubkey,
-    // allowed_discriminators: Vec<[u8; 8]>,
-    // into session
+    pub fn execute_with_session(
+        ctx: Context<ExecuteWithSession>,
+        instruction_data: Vec<u8>,
+    ) -> Result<()> {
+        handlers::execute_with_session::handle(ctx, instruction_data)
+    }
+
 }

@@ -16,4 +16,30 @@ pub enum DappError {
     ProgramPaused,
     #[msg("User smart wallet not found")]
     UserSmartWalletNotFound,
+    #[msg("Unauthorized session executor")]
+    UnauthorizedSessionExecutor,
+    #[msg("Unauthorized smart wallet owner")]
+    UnauthorizedSmartWalletOwner,
+    #[msg("Unauthorized session key")]
+    UnauthorizedSessionKey,
+    #[msg("Session not approved")]
+    SessionNotApproved,
+    #[msg("Session expired")]
+    SessionExpired,
+    #[msg("Empty instruction data")]
+    EmptyInstructionData,
+    #[msg("Not allowed to call smart wallet program")]
+    NotAllowedToCallSmartWalletProgram,
+    #[msg("Remaining accounts contains program config")]
+    RemainingAccountsContainsProgramConfig,
+    #[msg("Remaining accounts contains session")]
+    RemainingAccountsContainsSession,
+    #[msg("Remaining accounts contains session key")]
+    RemainingAccountsContainsSessionKey,
+    #[msg("Multiple user smart wallet accounts found")]
+    MultipleUserSmartWalletAccounts,
+    #[msg("User smart wallet account is writable")]
+    UserSmartWalletAccountIsWritable,
+    #[msg("Not allowed instruction discriminator")]
+    NotAllowedInstructionDiscriminator,
 }

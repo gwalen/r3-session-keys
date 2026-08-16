@@ -1,10 +1,10 @@
 use anchor_lang::prelude::*;
 
-// seeds : [b"user_smart_wallet", owner.to_bytes().as_ref()]
+// seeds : [b"user_smart_wallet", smart_wallet_owner.to_bytes().as_ref()]
 #[account]
 #[derive(InitSpace)]
 pub struct UserSmartWallet {
-    pub owner: Pubkey,
+    pub smart_wallet_owner: Pubkey,
     pub bump: u8,
 }
 

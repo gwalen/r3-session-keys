@@ -19,10 +19,14 @@ fn load_mock_program(env: &mut Env) {
         .unwrap();
 }
 
-fn initialize_mock_counter(env: &mut Env, authority: anchor_lang::prelude::Pubkey) {
+fn initialize_mock_counter(
+    env: &mut Env,
+    mock_client: &mock_client::MockClient,
+    authority: anchor_lang::prelude::Pubkey,
+) {
     let counter = mock_client::counter_pda();
-    let initialize = mock_client::initialize(env.admin.pubkey());
-    send_tx_expect_ok(&mut env.svm, initialize, &[&env.admin]);
+    let initialize_ix = mock_client.initialize(env.admin.pubkey());
+    send_tx_expect_ok(&mut env.svm, initialize_ix, &[&env.admin]);
 
     // The mock initialize instruction makes its payer the counter authority.
     // LiteSVM changes only that field so the test can exercise PDA signing.
@@ -40,6 +44,7 @@ fn initialize_mock_counter(env: &mut Env, authority: anchor_lang::prelude::Pubke
 fn test_execute_mock_increment_with_session() {
     let mut env = Env::new();
     load_mock_program(&mut env);
+    let mock_client = mock_client::MockClient::new();
 
     let smart_wallet_owner = Keypair::new();
     let session_key = Keypair::new();
@@ -47,11 +52,11 @@ fn test_execute_mock_increment_with_session() {
         client::create_smart_wallet(env.admin.pubkey(), smart_wallet_owner.pubkey());
     send_tx_expect_ok(&mut env.svm, create_wallet, &[&env.admin]);
 
-    initialize_mock_counter(&mut env, user_smart_wallet);
+    initialize_mock_counter(&mut env, &mock_client, user_smart_wallet);
     let mock_counter = mock_client::counter_pda();
-    let increment = mock_client::increment(user_smart_wallet);
+    let increment_ix = mock_client.increment(user_smart_wallet);
     let increment_discriminator = mock_client::increment_discriminator().to_vec();
-    assert!(increment.data.starts_with(&increment_discriminator));
+    assert!(increment_ix.data.starts_with(&increment_discriminator));
 
     let expires_at = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -83,7 +88,7 @@ fn test_execute_mock_increment_with_session() {
         env.admin.pubkey(),
         session_key.pubkey(),
         user_smart_wallet,
-        increment,
+        increment_ix,
     );
     send_tx_expect_ok(&mut env.svm, execute, &[&env.admin, &session_key]);
 

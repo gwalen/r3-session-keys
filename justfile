@@ -20,10 +20,25 @@ ts:
     #!/usr/bin/env bash
     set -euo pipefail
     yarn
+    # surfpool inherits this shell's stdout/stderr, so its logs would interleave with
+    # the mocha reporter. Send them to a file instead and only surface it on failure.
+    log=target/surfpool.log
+    mkdir -p "$(dirname "$log")"
+    : > "$log"
     # start surfpool with offline mode (do not fork mainnet, it takes longer and this script will fail as it for 8899 port answer not for full surfpool runbook to finish)
-    NO_DNA=1 surfpool start --offline --yes --no-tui --no-studio & trap 'kill $! 2>/dev/null || true' EXIT
-    # NO_DNA=1 surfpool start --no-tui --no-studio & trap 'kill $! 2>/dev/null || true' EXIT
-    until curl -s http://127.0.0.1:8899 >/dev/null; do sleep 0.2; done
+    NO_DNA=1 surfpool start --offline --yes --no-tui --no-studio >"$log" 2>&1 &
+    surfpool_pid=$!
+    trap 'kill ${surfpool_pid} 2>/dev/null || true' EXIT
+    # NO_DNA=1 surfpool start --no-tui --no-studio >"$log" 2>&1 &
+    echo "surfpool logs -> $log"
+    until curl -s http://127.0.0.1:8899 >/dev/null; do
+        if ! kill -0 ${surfpool_pid} 2>/dev/null; then
+            echo "error: surfpool exited early, last lines of $log:" >&2
+            tail -n 40 "$log" >&2
+            exit 1
+        fi
+        sleep 0.2
+    done
     # the RPC answers before the deployment runbook finishes, so wait for the program to be executable
     just wait-for-deployment
     anchor test --script test-ts --skip-local-validator --skip-deploy

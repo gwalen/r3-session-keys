@@ -2036,6 +2036,8 @@ dependencies = [
  "anchor-lang",
  "litesvm",
  "mock-program",
+ "serde",
+ "serde_json",
  "solana-keypair",
  "solana-message",
  "solana-signer",

@@ -48,7 +48,8 @@ fn test_execute_mock_increment_with_session() {
     initialize_mock_counter(&mut env, user_smart_wallet);
     let mock_counter = mock_client::counter_pda();
     let increment = mock_client::increment(user_smart_wallet);
-    let increment_data = increment.data.clone();
+    let increment_discriminator = mock_client::instruction_discriminator("increment");
+    assert!(increment.data.starts_with(&increment_discriminator));
 
     let expires_at = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -60,8 +61,8 @@ fn test_execute_mock_increment_with_session() {
         user_smart_wallet,
         session_key.pubkey(),
         expires_at,
-        increment_data.clone(),
-        increment_data.len() as u8,
+        increment_discriminator.clone(),
+        u8::try_from(increment_discriminator.len()).unwrap(),
     );
     send_tx_expect_ok(&mut env.svm, create_session, &[&env.admin]);
 

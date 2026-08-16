@@ -16,6 +16,7 @@ pub use instructions::unpause::*;
 pub use instructions::execute_with_session::*;
 pub use utils::constants;
 pub use utils::errors;
+pub use utils::events;
 
 declare_id!("r3xx1495USK8vysHAfL83d9seSofMH77ytxjuhepfFH");
 
@@ -46,6 +47,7 @@ pub mod r3_session_keys {
     pub fn create_session(
         ctx: Context<CreateSession>,
         session_key: Pubkey,
+        target_program: Pubkey,
         expires_at: i64,
         allowed_instructions_discriminators: Vec<u8>,
         discriminator_len: u8,
@@ -53,6 +55,7 @@ pub mod r3_session_keys {
         handlers::create_session::handle(
             ctx,
             session_key,
+            target_program,
             expires_at,
             allowed_instructions_discriminators,
             discriminator_len,

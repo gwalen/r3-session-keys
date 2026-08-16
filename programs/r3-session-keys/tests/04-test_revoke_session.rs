@@ -32,6 +32,7 @@ fn test_revoke_session_changes_status() {
         env.admin.pubkey(),
         user_smart_wallet,
         session_key,
+        anchor_lang::system_program::ID,
         expires_at,
         vec![],
         8,

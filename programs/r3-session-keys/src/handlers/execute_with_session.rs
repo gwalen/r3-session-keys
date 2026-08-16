@@ -3,7 +3,11 @@ use anchor_lang::prelude::*;
 use crate::instructions::execute_with_session::ExecuteWithSession;
 use crate::{
     state::{program_config::ProgramConfig, session::Session, user_smart_wallet::UserSmartWallet},
-    utils::{common::read_array_element, errors::DappError},
+    utils::{
+        common::read_array_element,
+        errors::DappError,
+        events::SessionExecuted,
+    },
 };
 use anchor_lang::solana_program::{instruction::Instruction, program::invoke_signed};
 
@@ -17,9 +21,13 @@ pub fn handle<'info>(
 
     execute_target_instruction(&ctx, &instruction_data)?;
 
-    // TODO: if needed, post execution checks goes here (for example SOL or token from smart wallet used)
-
-    // TODO: emit event
+    emit!(SessionExecuted {
+        session: ctx.accounts.session.key(),
+        user_smart_wallet: ctx.accounts.user_smart_wallet.key(),
+        session_executor: ctx.accounts.session_executor.key(),
+        session_key: ctx.accounts.session_key.key(),
+        target_program: ctx.accounts.target_program.key(),
+    });
 
     Ok(())
 }

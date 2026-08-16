@@ -37,5 +37,6 @@ pub struct ExecuteWithSession<'info> {
     )]
     pub user_smart_wallet: Account<'info, UserSmartWallet>,
 
+    #[account(address = session.target_program @ DappError::InvalidTargetProgram)]
     pub target_program: Program<'info>,
 }

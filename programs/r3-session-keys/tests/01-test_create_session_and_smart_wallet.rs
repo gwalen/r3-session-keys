@@ -57,6 +57,7 @@ fn test_create_session() {
         env.admin.pubkey(),
         user_smart_wallet,
         session_key,
+        anchor_lang::system_program::ID,
         expires_at,
         allowed_instructions_discriminators.clone(),
         discriminator_len,
@@ -66,6 +67,7 @@ fn test_create_session() {
     let state: Session = load(&env, &session);
     assert_eq!(state.session_executor, env.admin.pubkey());
     assert_eq!(state.session_key, session_key);
+    assert_eq!(state.target_program, anchor_lang::system_program::ID);
     assert_eq!(state.expires_at, expires_at);
     // assert!(state.allowed_writeable_mint_list.is_empty());
     // assert!(state.mint_limits.is_empty());
@@ -75,6 +77,5 @@ fn test_create_session() {
     );
     assert_eq!(state.discriminator_size, discriminator_len);
     assert!(state.status == SessionStatus::WaitingForApproval);
-    assert_eq!(state.nonce, 0);
     assert_eq!(state.bump, bump);
 }

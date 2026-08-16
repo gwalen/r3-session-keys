@@ -3,11 +3,13 @@ use anchor_lang::prelude::*;
 use crate::{
     instructions::create_session::CreateSession,
     state::session::{Session, SessionStatus},
+    utils::events::SessionCreated,
 };
 
 pub fn handle(
     ctx: Context<CreateSession>,
     session_key: Pubkey,
+    target_program: Pubkey,
     expires_at: i64,
     allowed_instructions_discriminators: Vec<u8>,
     discriminator_len: u8,
@@ -15,15 +17,27 @@ pub fn handle(
     ctx.accounts.session.set_inner(Session {
         session_executor: ctx.accounts.session_executor.key(),
         session_key,
+        target_program,
         expires_at,
-        // TODO: implement later if enough time, or just one mint
-        // allowed_writeable_mint_list: vec![],
-        // mint_limits: vec![],
         allowed_instructions_discriminators,
         discriminator_size: discriminator_len,
         status: SessionStatus::WaitingForApproval,
-        nonce: 0,
         bump: ctx.bumps.session,
+    });
+
+    emit!(SessionCreated {
+        session: ctx.accounts.session.key(),
+        user_smart_wallet: ctx.accounts.user_smart_wallet.key(),
+        session_executor: ctx.accounts.session_executor.key(),
+        session_key,
+        target_program,
+        expires_at,
+        allowed_instructions_discriminators: ctx
+            .accounts
+            .session
+            .allowed_instructions_discriminators
+            .clone(),
+        discriminator_size: discriminator_len,
     });
 
     Ok(())

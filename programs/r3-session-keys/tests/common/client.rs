@@ -79,6 +79,7 @@ impl R3SessionKeysClient {
         session_executor: Pubkey,
         user_smart_wallet: Pubkey,
         session_key: Pubkey,
+        target_program: Pubkey,
         expires_at: i64,
         allowed_instructions_discriminators: Vec<u8>,
         discriminator_len: u8,
@@ -97,6 +98,7 @@ impl R3SessionKeysClient {
             })
             .args(instruction::CreateSession {
                 session_key,
+                target_program,
                 expires_at,
                 allowed_instructions_discriminators,
                 discriminator_len,

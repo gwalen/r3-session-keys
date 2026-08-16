@@ -22,6 +22,8 @@ pub enum DappError {
     UnauthorizedSmartWalletOwner,
     #[msg("Unauthorized session key")]
     UnauthorizedSessionKey,
+    #[msg("Target program does not match the session target program")]
+    InvalidTargetProgram,
     #[msg("Session not approved")]
     SessionNotApproved,
     #[msg("Session expired")]

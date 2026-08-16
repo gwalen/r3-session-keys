@@ -8,15 +8,8 @@ pub struct Session {
     // Bot / external caller allowed to execute this session after the smart-wallet owner approves.
     pub session_executor: Pubkey,
     pub session_key: Pubkey,
+    pub target_program: Pubkey,
     pub expires_at: i64,
-
-    // TODO: implement later if enough time
-    // This allocates 4 + 32 * 10 = 324 bytes // 4 bytes for length
-    // #[max_len(10)]
-    // pub allowed_writeable_mint_list: Vec<Pubkey>,
-    // // This allocates 4 + 8 * 10 = 84 bytes // 4 bytes for length
-    // #[max_len(10)]
-    // pub mint_limits: Vec<u64>,
 
     // For AnchorV1 that would be 10 discriminators (10 different instructions)
     #[max_len(80)]
@@ -24,9 +17,7 @@ pub struct Session {
     // AnchorV1 has 8 bytes discriminator, Quasar 1 byte, SPL token 1, they can vary
     pub discriminator_size: u8,
 
-    // TODO: after revoke, no more operations allowed and than user can close the session and reclaim rent
     pub status: SessionStatus,
-    pub nonce: u64,
     pub bump: u8,
 }
 

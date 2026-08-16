@@ -132,6 +132,7 @@ fn create_approved_session(
         env.admin.pubkey(),
         user_smart_wallet,
         session_key.pubkey(),
+        mock_client::mock_program::ID,
         expires_at,
         allowed_discriminators,
         discriminator_size,

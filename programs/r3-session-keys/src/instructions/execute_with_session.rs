@@ -8,7 +8,6 @@ use crate::state::{program_config::ProgramStatus, session::SessionStatus};
 
 #[derive(Accounts)]
 pub struct ExecuteWithSession<'info> {
-    // Bot / external caller this session was created for. Distinct from user_smart_wallet.smart_wallet_owner.
     pub session_executor: Signer<'info>,
 
     // Ephemeral key proving the caller holds this session

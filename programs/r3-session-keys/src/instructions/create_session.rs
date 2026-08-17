@@ -24,7 +24,6 @@ pub struct CreateSession<'info> {
     // deserialize will check if accounts exists (program ownership and structure)
     pub user_smart_wallet: Account<'info, UserSmartWallet>,
 
-    // seeds: [b"session", user_smart_wallet.to_bytes().as_ref(), session_key.to_bytes().as_ref()]
     #[account(
         init,
         payer = session_executor,

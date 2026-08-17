@@ -89,7 +89,7 @@ export async function getOnChainUnixTimestamp(connection: Connection): Promise<n
   return Number(clock.data.readBigInt64LE(32));
 }
 
-export async function futureExpiresAt(
+export async function timestampFromFuture(
   connection: Connection,
   offsetSeconds: number = SESSION_EXPIRY_OFFSET_SECONDS
 ): Promise<anchor.BN> {

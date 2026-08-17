@@ -3,9 +3,7 @@
 ## How it works
 
 The admin creates a smart wallet (`UserSmartWallet`) for each user. A session executor then creates a `Session` so it can call one target program for that wallet. The session lists which instructions are allowed and when it expires.
-
 The session cannot be used until the smart-wallet owner approves it. The owner can revoke it at any time.
-
 The session key is a short-lived key. The session executor creates it when it creates the session. The program uses this key to identify the session.
 
 On `execute_with_session`, the program checks the session: it must be approved and not expired, the target program and instruction must be allowed, and remaining accounts must pass the safety rules. Then it calls the target instruction via CPI. The smart wallet PDA signs that call (`invoke_signed`).

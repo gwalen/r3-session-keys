@@ -6,26 +6,17 @@ use {
         solana_program::instruction::Instruction,
     },
     common::{
-        client, send_tx_expect_error, send_tx_expect_ok, timestamp_from_future, Env,
-        DUMMY_ANCHOR_DISCRIMINATOR, TARGET_PROGRAM_PLACEHOLDER,
+        client::R3SessionKeysClient, send_tx_expect_error, send_tx_expect_ok,
+        timestamp_from_future, Env, DUMMY_ANCHOR_DISCRIMINATOR, TARGET_PROGRAM_PLACEHOLDER,
     },
     solana_keypair::Keypair,
     solana_signer::Signer,
 };
 
-struct ApprovedSessionFixture {
-    session_key: Keypair,
-    user_smart_wallet: Pubkey,
-    session: Pubkey,
-}
-
 fn create_approved_session(
     env: &mut Env,
-    client: &client::R3SessionKeysClient,
-) -> ApprovedSessionFixture {
-    let initialize = client.initialize(env.admin.pubkey());
-    send_tx_expect_ok(&mut env.svm, initialize, &[&env.admin]);
-
+    client: &R3SessionKeysClient,
+) -> (Keypair, Pubkey, Pubkey) {
     let smart_wallet_owner = Keypair::new();
     let session_key = Keypair::new();
     let (create_wallet, user_smart_wallet, _) =
@@ -50,17 +41,14 @@ fn create_approved_session(
     );
     send_tx_expect_ok(&mut env.svm, approve, &[&env.admin, &smart_wallet_owner]);
 
-    ApprovedSessionFixture {
-        session_key,
-        user_smart_wallet,
-        session,
-    }
+    (session_key, user_smart_wallet, session)
 }
 
 fn execute_with_remaining_accounts(
     env: &mut Env,
-    client: &client::R3SessionKeysClient,
-    fixture: &ApprovedSessionFixture,
+    client: &R3SessionKeysClient,
+    session_key: &Keypair,
+    user_smart_wallet: Pubkey,
     accounts: Vec<AccountMeta>,
 ) -> String {
     let target_ix = Instruction {
@@ -70,100 +58,128 @@ fn execute_with_remaining_accounts(
     };
     let execute = client.execute_with_session(
         env.admin.pubkey(),
-        fixture.session_key.pubkey(),
-        fixture.user_smart_wallet,
+        session_key.pubkey(),
+        user_smart_wallet,
         target_ix,
     );
-    send_tx_expect_error(&mut env.svm, execute, &[&env.admin, &fixture.session_key])
-}
-
-fn assert_error(error: &str, expected_code: &str) {
-    assert!(
-        error.contains(&format!("Error Code: {expected_code}")),
-        "expected {expected_code}, got:\n{error}"
-    );
+    send_tx_expect_error(&mut env.svm, execute, &[&env.admin, session_key])
 }
 
 #[test]
 fn test_execute_rejects_session_key_in_remaining_accounts() {
-    let client = client::R3SessionKeysClient::new();
+    let client = R3SessionKeysClient::new();
     let mut env = Env::new();
-    let fixture = create_approved_session(&mut env, &client);
+    let initialize_ix = client.initialize(env.admin.pubkey());
+    send_tx_expect_ok(&mut env.svm, initialize_ix, &[&env.admin]);
+
+    let (session_key, user_smart_wallet, _) = create_approved_session(&mut env, &client);
 
     let error = execute_with_remaining_accounts(
         &mut env,
         &client,
-        &fixture,
+        &session_key,
+        user_smart_wallet,
         vec![
-            AccountMeta::new_readonly(fixture.session_key.pubkey(), false),
-            AccountMeta::new_readonly(fixture.user_smart_wallet, false),
+            AccountMeta::new_readonly(session_key.pubkey(), false),
+            AccountMeta::new_readonly(user_smart_wallet, false),
         ],
     );
 
-    assert_error(&error, "RemainingAccountsContainsSessionKey");
+    assert!(
+        error.contains("Error Code: RemainingAccountsContainsSessionKey"),
+        "{error}"
+    );
 }
 
 #[test]
 fn test_execute_rejects_other_program_owned_account() {
-    let client = client::R3SessionKeysClient::new();
+    let client = R3SessionKeysClient::new();
     let mut env = Env::new();
-    let fixture = create_approved_session(&mut env, &client);
+    let initialize_ix = client.initialize(env.admin.pubkey());
+    send_tx_expect_ok(&mut env.svm, initialize_ix, &[&env.admin]);
+
+    let (session_key, user_smart_wallet, session) = create_approved_session(&mut env, &client);
 
     let error = execute_with_remaining_accounts(
         &mut env,
         &client,
-        &fixture,
+        &session_key,
+        user_smart_wallet,
         vec![
-            AccountMeta::new_readonly(fixture.session, false),
-            AccountMeta::new_readonly(fixture.user_smart_wallet, false),
+            AccountMeta::new_readonly(session, false),
+            AccountMeta::new_readonly(user_smart_wallet, false),
         ],
     );
 
-    assert_error(&error, "RemainingAccountsContainsProgramOwnedAccount");
+    assert!(
+        error.contains("Error Code: RemainingAccountsContainsProgramOwnedAccount"),
+        "{error}"
+    );
 }
 
 #[test]
 fn test_execute_rejects_writable_smart_wallet() {
-    let client = client::R3SessionKeysClient::new();
+    let client = R3SessionKeysClient::new();
     let mut env = Env::new();
-    let fixture = create_approved_session(&mut env, &client);
+    let initialize_ix = client.initialize(env.admin.pubkey());
+    send_tx_expect_ok(&mut env.svm, initialize_ix, &[&env.admin]);
+
+    let (session_key, user_smart_wallet, _) = create_approved_session(&mut env, &client);
 
     let error = execute_with_remaining_accounts(
         &mut env,
         &client,
-        &fixture,
-        vec![AccountMeta::new(fixture.user_smart_wallet, false)],
+        &session_key,
+        user_smart_wallet,
+        vec![AccountMeta::new(user_smart_wallet, false)],
     );
 
-    assert_error(&error, "UserSmartWalletAccountIsWritable");
+    assert!(
+        error.contains("Error Code: UserSmartWalletAccountIsWritable"),
+        "{error}"
+    );
 }
 
 #[test]
 fn test_execute_rejects_missing_smart_wallet() {
-    let client = client::R3SessionKeysClient::new();
+    let client = R3SessionKeysClient::new();
     let mut env = Env::new();
-    let fixture = create_approved_session(&mut env, &client);
+    let initialize_ix = client.initialize(env.admin.pubkey());
+    send_tx_expect_ok(&mut env.svm, initialize_ix, &[&env.admin]);
 
-    let error = execute_with_remaining_accounts(&mut env, &client, &fixture, vec![]);
+    let (session_key, user_smart_wallet, _) = create_approved_session(&mut env, &client);
 
-    assert_error(&error, "UserSmartWalletNotFound");
+    let error =
+        execute_with_remaining_accounts(&mut env, &client, &session_key, user_smart_wallet, vec![]);
+
+    assert!(
+        error.contains("Error Code: UserSmartWalletNotFound"),
+        "{error}"
+    );
 }
 
 #[test]
 fn test_execute_rejects_duplicate_smart_wallet() {
-    let client = client::R3SessionKeysClient::new();
+    let client = R3SessionKeysClient::new();
     let mut env = Env::new();
-    let fixture = create_approved_session(&mut env, &client);
+    let initialize_ix = client.initialize(env.admin.pubkey());
+    send_tx_expect_ok(&mut env.svm, initialize_ix, &[&env.admin]);
+
+    let (session_key, user_smart_wallet, _) = create_approved_session(&mut env, &client);
 
     let error = execute_with_remaining_accounts(
         &mut env,
         &client,
-        &fixture,
+        &session_key,
+        user_smart_wallet,
         vec![
-            AccountMeta::new_readonly(fixture.user_smart_wallet, false),
-            AccountMeta::new_readonly(fixture.user_smart_wallet, false),
+            AccountMeta::new_readonly(user_smart_wallet, false),
+            AccountMeta::new_readonly(user_smart_wallet, false),
         ],
     );
 
-    assert_error(&error, "MultipleUserSmartWalletAccounts");
+    assert!(
+        error.contains("Error Code: MultipleUserSmartWalletAccounts"),
+        "{error}"
+    );
 }

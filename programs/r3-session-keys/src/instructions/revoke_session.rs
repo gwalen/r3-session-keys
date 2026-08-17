@@ -4,7 +4,6 @@ use crate::{
     state::session::Session,
     utils::errors::DappError,
     state::{program_config::ProgramConfig, user_smart_wallet::UserSmartWallet},
-    state::program_config::ProgramStatus,
 };
 
 
@@ -13,9 +12,10 @@ use crate::{
 pub struct RevokeSession<'info> {
     pub smart_wallet_owner: Signer<'info>,
 
+    // action and must stay available while the program is paused (if there is an incident),
+    // so owners can kill compromised sessions before the program is unpaused.
     #[account(
         seeds = [ProgramConfig::SEED_PREFIX],
-        constraint = program_config.status == ProgramStatus::Active @ DappError::ProgramPaused,
         bump = program_config.bump,
     )]
     pub program_config: Account<'info, ProgramConfig>,

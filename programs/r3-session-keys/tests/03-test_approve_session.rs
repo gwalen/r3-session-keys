@@ -1,7 +1,10 @@
 mod common;
 
 use {
-    common::{client, load, send_tx_expect_ok, Env, TARGET_PROGRAM_PLACEHOLDER},
+    common::{
+        client, load, send_tx_expect_error, send_tx_expect_ok, Env, DUMMY_ANCHOR_DISCRIMINATOR,
+        TARGET_PROGRAM_PLACEHOLDER,
+    },
     r3_session_keys::state::session::{Session, SessionStatus},
     solana_keypair::Keypair,
     solana_signer::Signer,
@@ -34,7 +37,7 @@ fn test_approve_session_changes_status() {
         session_key,
         TARGET_PROGRAM_PLACEHOLDER,
         expires_at,
-        vec![],
+        DUMMY_ANCHOR_DISCRIMINATOR.to_vec(),
         8,
     );
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
@@ -47,4 +50,51 @@ fn test_approve_session_changes_status() {
 
     let state: Session = load(&env, &session);
     assert_eq!(state.status, SessionStatus::Approved);
+}
+
+#[test]
+fn test_approve_rejects_revoked_session() {
+    let client = client::R3SessionKeysClient::new();
+    let mut env = Env::new();
+    let initialize_ix = client.initialize(env.admin.pubkey());
+    send_tx_expect_ok(&mut env.svm, initialize_ix, &[&env.admin]);
+
+    let user = Keypair::new();
+    let session_key = Keypair::new().pubkey();
+    let expires_at = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64
+        + 1000;
+
+    let (ix, user_smart_wallet, _) = client.create_smart_wallet(env.admin.pubkey(), user.pubkey());
+    send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
+
+    let (ix, session, _) = client.create_session(
+        env.admin.pubkey(),
+        user_smart_wallet,
+        session_key,
+        TARGET_PROGRAM_PLACEHOLDER,
+        expires_at,
+        DUMMY_ANCHOR_DISCRIMINATOR.to_vec(),
+        8,
+    );
+    send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
+
+    let ix = client.approve_session(user.pubkey(), user_smart_wallet, session_key);
+    send_tx_expect_ok(&mut env.svm, ix, &[&env.admin, &user]);
+
+    let ix = client.revoke_session(user.pubkey(), user_smart_wallet, session_key);
+    send_tx_expect_ok(&mut env.svm, ix, &[&env.admin, &user]);
+
+    // Revoked is terminal - a revoked session must never be re-approved.
+    let ix = client.approve_session(user.pubkey(), user_smart_wallet, session_key);
+    let error = send_tx_expect_error(&mut env.svm, ix, &[&env.admin, &user]);
+    assert!(
+        error.contains("Error Code: InvalidSessionStatus"),
+        "{error}"
+    );
+
+    let state: Session = load(&env, &session);
+    assert_eq!(state.status, SessionStatus::Revoked);
 }

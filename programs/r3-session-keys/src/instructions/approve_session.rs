@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    state::session::Session,
+    state::session::{Session, SessionStatus},
     utils::errors::DappError,
     state::{program_config::ProgramConfig, user_smart_wallet::UserSmartWallet},
     state::program_config::ProgramStatus,
@@ -31,6 +31,7 @@ pub struct ApproveSession<'info> {
     #[account(
         mut,
         seeds = [Session::SEED_PREFIX, user_smart_wallet.key().as_ref(), _session_key.key().as_ref()],
+        constraint = session.status == SessionStatus::WaitingForApproval @ DappError::InvalidSessionStatus,
         bump = session.bump
     )]
     pub session: Box<Account<'info, Session>>,

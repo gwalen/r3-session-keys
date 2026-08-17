@@ -14,9 +14,19 @@ use {
     solana_message::{v0, VersionedMessage},
     solana_signer::Signer,
     solana_transaction::versioned::VersionedTransaction,
+    std::time::{SystemTime, UNIX_EPOCH},
 };
 
 pub const TARGET_PROGRAM_PLACEHOLDER: Pubkey = anchor_lang::solana_program::system_program::ID;
+pub const DUMMY_ANCHOR_DISCRIMINATOR: [u8; 8] = [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88];
+
+pub fn timestamp_from_future() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64
+        + 1000
+}
 
 fn signed_v0_tx(svm: &LiteSVM, ix: Instruction, signers: &[&Keypair]) -> VersionedTransaction {
     let payer = signers[0];

@@ -1,7 +1,10 @@
 mod common;
 
 use {
-    common::{client, load, send_tx_expect_ok, Env, TARGET_PROGRAM_PLACEHOLDER},
+    common::{
+        client, load, send_tx_expect_error, send_tx_expect_ok, Env, DUMMY_ANCHOR_DISCRIMINATOR,
+        TARGET_PROGRAM_PLACEHOLDER,
+    },
     r3_session_keys::state::{
         session::{Session, SessionStatus},
         user_smart_wallet::UserSmartWallet,
@@ -45,10 +48,6 @@ fn test_create_session() {
 
     // Two Anchor-style 8-byte instruction discriminators concatenated.
     let discriminator_len = 8u8;
-    let allowed_instructions_discriminators = vec![
-        0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x01,
-        0x02,
-    ];
 
     let (ix, user_smart_wallet, _) = client.create_smart_wallet(env.admin.pubkey(), user_wallet);
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
@@ -59,7 +58,7 @@ fn test_create_session() {
         session_key,
         TARGET_PROGRAM_PLACEHOLDER,
         expires_at,
-        allowed_instructions_discriminators.clone(),
+        DUMMY_ANCHOR_DISCRIMINATOR.to_vec(),
         discriminator_len,
     );
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
@@ -73,9 +72,79 @@ fn test_create_session() {
     // assert!(state.mint_limits.is_empty());
     assert_eq!(
         state.allowed_instructions_discriminators,
-        allowed_instructions_discriminators
+        DUMMY_ANCHOR_DISCRIMINATOR.to_vec()
     );
     assert_eq!(state.discriminator_size, discriminator_len);
     assert!(state.status == SessionStatus::WaitingForApproval);
     assert_eq!(state.bump, bump);
+}
+
+#[test]
+fn test_create_session_rejects_invalid_inputs() {
+    let client = client::R3SessionKeysClient::new();
+    let mut env = Env::new();
+    let initialize_ix = client.initialize(env.admin.pubkey());
+    send_tx_expect_ok(&mut env.svm, initialize_ix, &[&env.admin]);
+
+    let user_wallet = Keypair::new().pubkey();
+    let (ix, user_smart_wallet, _) = client.create_smart_wallet(env.admin.pubkey(), user_wallet);
+    send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);
+
+    let future_expires_at = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64
+        + 1000;
+    let discriminator = DUMMY_ANCHOR_DISCRIMINATOR.to_vec();
+
+    // discriminator_len = 0 would divide by zero in Session::parse_discriminators
+    let (ix, _, _) = client.create_session(
+        env.admin.pubkey(),
+        user_smart_wallet,
+        Keypair::new().pubkey(),
+        TARGET_PROGRAM_PLACEHOLDER,
+        future_expires_at,
+        discriminator.clone(),
+        0,
+    );
+    let error = send_tx_expect_error(&mut env.svm, ix, &[&env.admin]);
+    assert!(error.contains("Error Code: InvalidDiscriminatorSize"), "{error}");
+
+    // discriminator list must be a non-empty multiple of the discriminator size
+    let (ix, _, _) = client.create_session(
+        env.admin.pubkey(),
+        user_smart_wallet,
+        Keypair::new().pubkey(),
+        TARGET_PROGRAM_PLACEHOLDER,
+        future_expires_at,
+        vec![],
+        8,
+    );
+    let error = send_tx_expect_error(&mut env.svm, ix, &[&env.admin]);
+    assert!(error.contains("Error Code: InvalidDiscriminatorListLength"), "{error}");
+
+    let (ix, _, _) = client.create_session(
+        env.admin.pubkey(),
+        user_smart_wallet,
+        Keypair::new().pubkey(),
+        TARGET_PROGRAM_PLACEHOLDER,
+        future_expires_at,
+        vec![0x11, 0x22, 0x33],
+        8,
+    );
+    let error = send_tx_expect_error(&mut env.svm, ix, &[&env.admin]);
+    assert!(error.contains("Error Code: InvalidDiscriminatorListLength"), "{error}");
+
+    // expiration must be in the future
+    let (ix, _, _) = client.create_session(
+        env.admin.pubkey(),
+        user_smart_wallet,
+        Keypair::new().pubkey(),
+        TARGET_PROGRAM_PLACEHOLDER,
+        0,
+        discriminator,
+        8,
+    );
+    let error = send_tx_expect_error(&mut env.svm, ix, &[&env.admin]);
+    assert!(error.contains("Error Code: SessionExpirationInPast"), "{error}");
 }

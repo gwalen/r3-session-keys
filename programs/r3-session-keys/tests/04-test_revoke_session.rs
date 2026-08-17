@@ -1,7 +1,10 @@
 mod common;
 
 use {
-    common::{client, load, send_tx_expect_ok, Env, TARGET_PROGRAM_PLACEHOLDER},
+    common::{
+        client, load, send_tx_expect_ok, Env, DUMMY_ANCHOR_DISCRIMINATOR,
+        TARGET_PROGRAM_PLACEHOLDER,
+    },
     r3_session_keys::state::session::{Session, SessionStatus},
     solana_keypair::Keypair,
     solana_signer::Signer,
@@ -34,7 +37,7 @@ fn test_revoke_session_changes_status() {
         session_key,
         TARGET_PROGRAM_PLACEHOLDER,
         expires_at,
-        vec![],
+        DUMMY_ANCHOR_DISCRIMINATOR.to_vec(),
         8,
     );
     send_tx_expect_ok(&mut env.svm, ix, &[&env.admin]);

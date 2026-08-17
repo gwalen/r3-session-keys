@@ -9,9 +9,14 @@ import {
   assertProgramActive,
   assertProgramPaused,
   ensureProgramInitialized,
+  timestampFromFuture,
   sendExpectError,
 } from "./utils/helpers";
-import { ANCHOR_DISCRIMINATOR_LEN, TARGET_PROGRAM_PLACEHOLDER } from "./utils/constants";
+import {
+  DUMMY_ANCHOR_DISCRIMINATOR,
+  ANCHOR_DISCRIMINATOR_LEN,
+  TARGET_PROGRAM_PLACEHOLDER,
+} from "./utils/constants";
 
 describe("02 - Pause", () => {
   const provider = anchor.AnchorProvider.env();
@@ -33,13 +38,13 @@ describe("02 - Pause", () => {
       .signers([baseWallet.payer]);
   }
 
-  function createSession(userSmartWallet: PublicKey, sessionKey: PublicKey) {
+  async function createSession(userSmartWallet: PublicKey, sessionKey: PublicKey) {
     return program.methods
       .createSession(
         sessionKey,
         TARGET_PROGRAM_PLACEHOLDER,
-        new anchor.BN(0),
-        Buffer.alloc(0),
+        await timestampFromFuture(provider.connection),
+        DUMMY_ANCHOR_DISCRIMINATOR,
         ANCHOR_DISCRIMINATOR_LEN
       )
       .accounts({
@@ -75,7 +80,7 @@ describe("02 - Pause", () => {
     await sendExpectError(createSmartWallet(otherUserWallet).rpc());
     await assertProgramPaused(program);
 
-    await sendExpectError(createSession(userSmartWalletPda, sessionKey).rpc());
+    await sendExpectError((await createSession(userSmartWalletPda, sessionKey)).rpc());
     await assertProgramPaused(program);
 
     await program.methods
@@ -99,7 +104,7 @@ describe("02 - Pause", () => {
     );
     assert.equal(otherSmartWallet.smartWalletOwner.toBase58(), otherUserWallet.toBase58());
 
-    await createSession(userSmartWalletPda, sessionKey).rpc();
+    await (await createSession(userSmartWalletPda, sessionKey)).rpc();
     const session = await program.account.session.fetch(
       sessionKeys.deriveSessionPda(program.programId, userSmartWalletPda, sessionKey)
     );

@@ -186,13 +186,14 @@ fn test_execute_mock_increment_not_allowed_by_session() {
         .unwrap()
         .as_secs() as i64
         + 1000;
+    // Session allows only the deposit instruction, so increment must be rejected.
     let (create_session, _, _) = client.create_session(
         env.admin.pubkey(),
         user_smart_wallet,
         session_key.pubkey(),
         mock_client::mock_program::ID,
         expires_at,
-        vec![],
+        mock_client::deposit_discriminator().to_vec(),
         u8::try_from(mock_client::increment_discriminator().len()).unwrap(),
     );
     send_tx_expect_ok(&mut env.svm, create_session, &[&env.admin]);
@@ -246,8 +247,7 @@ fn test_execute_mock_increment_with_expired_session_key() {
     let increment_ix = mock_client.increment(user_smart_wallet);
     let increment_discriminator = mock_client::increment_discriminator().to_vec();
 
-    // Expiration is exclusive, so a session expiring at the current timestamp is expired.
-    let expires_at = env.svm.get_sysvar::<Clock>().unix_timestamp;
+    let expires_at = env.svm.get_sysvar::<Clock>().unix_timestamp + 1000;
     let (create_session, _, _) = client.create_session(
         env.admin.pubkey(),
         user_smart_wallet,
@@ -258,6 +258,11 @@ fn test_execute_mock_increment_with_expired_session_key() {
         u8::try_from(increment_discriminator.len()).unwrap(),
     );
     send_tx_expect_ok(&mut env.svm, create_session, &[&env.admin]);
+
+    // Expiration is exclusive, so warping the clock exactly to expires_at makes the session expired.
+    let mut clock = env.svm.get_sysvar::<Clock>();
+    clock.unix_timestamp = expires_at;
+    env.svm.set_sysvar::<Clock>(&clock);
 
     let approve_session = client.approve_session(
         smart_wallet_owner.pubkey(),

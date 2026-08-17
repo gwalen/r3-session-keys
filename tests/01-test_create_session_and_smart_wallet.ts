@@ -5,9 +5,9 @@ import assert from "assert";
 
 import { R3SessionKeys } from "../target/types/r3_session_keys";
 import * as sessionKeys from "./utils/pda";
-import { ensureProgramInitialized, futureExpiresAt } from "./utils/helpers";
+import { ensureProgramInitialized, timestampFromFuture } from "./utils/helpers";
 import {
-  ALLOWED_DISCRIMINATORS_PLACEHOLDER,
+  DUMMY_ANCHOR_DISCRIMINATOR,
   ANCHOR_DISCRIMINATOR_LEN,
   TARGET_PROGRAM_PLACEHOLDER,
 } from "./utils/constants";
@@ -51,7 +51,7 @@ describe("01 - Create smart wallet and session", () => {
   it("Create session", async () => {
     const userWallet = Keypair.generate().publicKey;
     const sessionKey = Keypair.generate().publicKey;
-    const expiresAt = await futureExpiresAt(connection);
+    const expiresAt = await timestampFromFuture(connection);
 
     const userSmartWalletPda = sessionKeys.deriveUserSmartWalletPda(program.programId, userWallet);
     await program.methods
@@ -77,7 +77,7 @@ describe("01 - Create smart wallet and session", () => {
         sessionKey,
         TARGET_PROGRAM_PLACEHOLDER,
         expiresAt,
-        ALLOWED_DISCRIMINATORS_PLACEHOLDER,
+        DUMMY_ANCHOR_DISCRIMINATOR,
         ANCHOR_DISCRIMINATOR_LEN
       )
       .accounts({
@@ -98,7 +98,7 @@ describe("01 - Create smart wallet and session", () => {
     assert.equal(session.expiresAt.toString(), expiresAt.toString());
     assert.equal(
       Buffer.from(session.allowedInstructionsDiscriminators).toString("hex"),
-      ALLOWED_DISCRIMINATORS_PLACEHOLDER.toString("hex")
+      DUMMY_ANCHOR_DISCRIMINATOR.toString("hex")
     );
     assert.equal(session.discriminatorSize, ANCHOR_DISCRIMINATOR_LEN);
     assert.ok("waitingForApproval" in session.status);

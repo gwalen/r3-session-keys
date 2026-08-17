@@ -17,7 +17,7 @@ import * as sessionKeys from "./utils/pda";
 import {
   ensureProgramInitialized,
   executeWithSession,
-  futureExpiresAt,
+  timestampFromFuture,
   loadProgramFromFile,
   sendExpectError,
 } from "./utils/helpers";
@@ -140,7 +140,7 @@ describe("06 - Advanced tests (token pool)", () => {
       .createSession(
         sessionKey.publicKey,
         mockProgram.programId,
-        await futureExpiresAt(connection),
+        await timestampFromFuture(connection),
         allowedInstructionsDiscriminators,
         discriminatorLen
       )

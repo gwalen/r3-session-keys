@@ -8,7 +8,7 @@ import * as sessionKeys from "./utils/pda";
 import {
   ensureProgramInitialized,
   executeWithSession,
-  futureExpiresAt,
+  timestampFromFuture,
   getOnChainUnixTimestamp,
   loadProgramFromFile,
   sendExpectError,
@@ -159,7 +159,7 @@ describe("05 - Execute with session (counter instruction)", () => {
       userSmartWallet,
       sessionKey: sessionKey.publicKey,
       targetProgram: mockProgram.programId,
-      expiresAt: await futureExpiresAt(connection),
+      expiresAt: await timestampFromFuture(connection),
       allowedInstructionsDiscriminators: mock.INCREMENT_DISCRIMINATOR,
       discriminatorLen: mock.INCREMENT_DISCRIMINATOR.length,
     });
@@ -196,7 +196,7 @@ describe("05 - Execute with session (counter instruction)", () => {
       userSmartWallet,
       sessionKey: sessionKey.publicKey,
       targetProgram: TARGET_PROGRAM_PLACEHOLDER,
-      expiresAt: await futureExpiresAt(connection),
+      expiresAt: await timestampFromFuture(connection),
       allowedInstructionsDiscriminators: mock.INCREMENT_DISCRIMINATOR,
       discriminatorLen: mock.INCREMENT_DISCRIMINATOR.length,
     });
@@ -222,13 +222,13 @@ describe("05 - Execute with session (counter instruction)", () => {
     await initializeMockCounter(userSmartWallet);
     const incrementIx = await incrementInstruction(userSmartWallet);
 
-    // No discriminator is allowed by this session
+    // Session allows only the deposit instruction, so increment must be rejected
     await createSession({
       userSmartWallet,
       sessionKey: sessionKey.publicKey,
       targetProgram: mockProgram.programId,
-      expiresAt: await futureExpiresAt(connection),
-      allowedInstructionsDiscriminators: Buffer.alloc(0),
+      expiresAt: await timestampFromFuture(connection),
+      allowedInstructionsDiscriminators: mock.DEPOSIT_DISCRIMINATOR,
       discriminatorLen: ANCHOR_DISCRIMINATOR_LEN,
     });
     await approveSession(smartWalletOwner, sessionKey.publicKey);
@@ -258,8 +258,8 @@ describe("05 - Execute with session (counter instruction)", () => {
     await initializeMockCounter(userSmartWallet);
     const incrementIx = await incrementInstruction(userSmartWallet);
 
-    // Expiration is exclusive, so a session expiring at the current timestamp is expired.
-    const expiresAt = new anchor.BN(await getOnChainUnixTimestamp(connection));
+    // Creation requires a future expiration, so create a short-lived session and let it lapse.
+    const expiresAt = new anchor.BN((await getOnChainUnixTimestamp(connection)) + 3);
     await createSession({
       userSmartWallet,
       sessionKey: sessionKey.publicKey,
@@ -269,6 +269,11 @@ describe("05 - Execute with session (counter instruction)", () => {
       discriminatorLen: mock.INCREMENT_DISCRIMINATOR.length,
     });
     await approveSession(smartWalletOwner, sessionKey.publicKey);
+
+    // Expiration is exclusive, so once the on-chain clock reaches expires_at the session is expired.
+    while ((await getOnChainUnixTimestamp(connection)) < expiresAt.toNumber()) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
 
     const error = await sendExpectError(
       executeWithSession(program, {
@@ -299,7 +304,7 @@ describe("05 - Execute with session (counter instruction)", () => {
       userSmartWallet,
       sessionKey: sessionKey.publicKey,
       targetProgram: mockProgram.programId,
-      expiresAt: await futureExpiresAt(connection),
+      expiresAt: await timestampFromFuture(connection),
       allowedInstructionsDiscriminators: mock.INCREMENT_DISCRIMINATOR,
       discriminatorLen: mock.INCREMENT_DISCRIMINATOR.length,
     });

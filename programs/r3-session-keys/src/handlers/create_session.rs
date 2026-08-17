@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 use crate::{
     instructions::create_session::CreateSession,
     state::session::{Session, SessionStatus},
+    utils::errors::DappError,
     utils::events::SessionCreated,
 };
 
@@ -14,6 +15,18 @@ pub fn handle(
     allowed_instructions_discriminators: Vec<u8>,
     discriminator_len: u8,
 ) -> Result<()> {
+    // discriminator_len = 0 would divide by zero in Session::parse_discriminators
+    require!(discriminator_len > 0, DappError::InvalidDiscriminatorSize);
+    require!(
+        !allowed_instructions_discriminators.is_empty()
+            && allowed_instructions_discriminators.len() % discriminator_len as usize == 0,
+        DappError::InvalidDiscriminatorListLength
+    );
+    require!(
+        expires_at > Clock::get()?.unix_timestamp,
+        DappError::SessionExpirationInPast
+    );
+
     ctx.accounts.session.set_inner(Session {
         session_executor: ctx.accounts.session_executor.key(),
         session_key,

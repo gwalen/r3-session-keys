@@ -38,4 +38,12 @@ pub enum DappError {
     UserSmartWalletAccountIsWritable,
     #[msg("Not allowed instruction discriminator")]
     NotAllowedInstructionDiscriminator,
+    #[msg("Invalid session status")]
+    InvalidSessionStatus,
+    #[msg("Discriminator size must be greater than zero")]
+    InvalidDiscriminatorSize,
+    #[msg("Discriminator list must be a non-empty multiple of the discriminator size")]
+    InvalidDiscriminatorListLength,
+    #[msg("Session expiration must be in the future")]
+    SessionExpirationInPast,
 }

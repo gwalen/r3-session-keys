@@ -11,9 +11,8 @@ export const ANCHOR_DISCRIMINATOR_LEN = 8;
 // Sessions that never execute a CPI point at the system program (mirrors TARGET_PROGRAM_PLACEHOLDER in the Rust tests)
 export const TARGET_PROGRAM_PLACEHOLDER = SystemProgram.programId;
 
-// Two Anchor-style 8-byte instruction discriminators concatenated.
-export const ALLOWED_DISCRIMINATORS_PLACEHOLDER = Buffer.from([
-  0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x01, 0x02,
+export const DUMMY_ANCHOR_DISCRIMINATOR = Buffer.from([
+  0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
 ]);
 
 /*** 06-advanced-tests token pool constants ***/

@@ -5,8 +5,12 @@ import assert from "assert";
 
 import { R3SessionKeys } from "../target/types/r3_session_keys";
 import * as sessionKeys from "./utils/pda";
-import { ensureProgramInitialized, futureExpiresAt } from "./utils/helpers";
-import { ANCHOR_DISCRIMINATOR_LEN, TARGET_PROGRAM_PLACEHOLDER } from "./utils/constants";
+import { ensureProgramInitialized, timestampFromFuture } from "./utils/helpers";
+import {
+  DUMMY_ANCHOR_DISCRIMINATOR,
+  ANCHOR_DISCRIMINATOR_LEN,
+  TARGET_PROGRAM_PLACEHOLDER,
+} from "./utils/constants";
 
 describe("04 - Revoke session", () => {
   const provider = anchor.AnchorProvider.env();
@@ -23,7 +27,7 @@ describe("04 - Revoke session", () => {
   it("Revoke session changes status", async () => {
     const user = Keypair.generate();
     const sessionKey = Keypair.generate().publicKey;
-    const expiresAt = await futureExpiresAt(connection);
+    const expiresAt = await timestampFromFuture(connection);
 
     const userSmartWalletPda = sessionKeys.deriveUserSmartWalletPda(
       program.programId,
@@ -51,7 +55,7 @@ describe("04 - Revoke session", () => {
         sessionKey,
         TARGET_PROGRAM_PLACEHOLDER,
         expiresAt,
-        Buffer.alloc(0),
+        DUMMY_ANCHOR_DISCRIMINATOR,
         ANCHOR_DISCRIMINATOR_LEN
       )
       .accounts({

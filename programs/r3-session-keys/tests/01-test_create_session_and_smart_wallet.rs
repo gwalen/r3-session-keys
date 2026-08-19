@@ -108,7 +108,10 @@ fn test_create_session_rejects_invalid_inputs() {
         0,
     );
     let error = send_tx_expect_error(&mut env.svm, ix, &[&env.admin]);
-    assert!(error.contains("Error Code: InvalidDiscriminatorSize"), "{error}");
+    assert!(
+        error.contains("Error Code: InvalidDiscriminatorSize"),
+        "{error}"
+    );
 
     // discriminator list must be a non-empty multiple of the discriminator size
     let (ix, _, _) = client.create_session(
@@ -121,7 +124,10 @@ fn test_create_session_rejects_invalid_inputs() {
         8,
     );
     let error = send_tx_expect_error(&mut env.svm, ix, &[&env.admin]);
-    assert!(error.contains("Error Code: InvalidDiscriminatorListLength"), "{error}");
+    assert!(
+        error.contains("Error Code: InvalidDiscriminatorListLength"),
+        "{error}"
+    );
 
     let (ix, _, _) = client.create_session(
         env.admin.pubkey(),
@@ -133,7 +139,26 @@ fn test_create_session_rejects_invalid_inputs() {
         8,
     );
     let error = send_tx_expect_error(&mut env.svm, ix, &[&env.admin]);
-    assert!(error.contains("Error Code: InvalidDiscriminatorListLength"), "{error}");
+    assert!(
+        error.contains("Error Code: InvalidDiscriminatorListLength"),
+        "{error}"
+    );
+
+    // account allocation reserves at most 80 discriminator bytes
+    let (ix, _, _) = client.create_session(
+        env.admin.pubkey(),
+        user_smart_wallet,
+        Keypair::new().pubkey(),
+        TARGET_PROGRAM_PLACEHOLDER,
+        future_expires_at,
+        vec![0x11; 88],
+        8,
+    );
+    let error = send_tx_expect_error(&mut env.svm, ix, &[&env.admin]);
+    assert!(
+        error.contains("Error Code: InvalidDiscriminatorListLength"),
+        "{error}"
+    );
 
     // expiration must be in the future
     let (ix, _, _) = client.create_session(
@@ -146,5 +171,8 @@ fn test_create_session_rejects_invalid_inputs() {
         8,
     );
     let error = send_tx_expect_error(&mut env.svm, ix, &[&env.admin]);
-    assert!(error.contains("Error Code: SessionExpirationInPast"), "{error}");
+    assert!(
+        error.contains("Error Code: SessionExpirationInPast"),
+        "{error}"
+    );
 }

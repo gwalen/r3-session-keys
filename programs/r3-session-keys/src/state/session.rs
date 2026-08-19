@@ -1,5 +1,5 @@
-use anchor_lang::prelude::*;
 use crate::utils::common::read_array_element;
+use anchor_lang::prelude::*;
 
 // seeds: [b"session", user_smart_wallet.to_bytes().as_ref(), session_key.to_bytes().as_ref()]
 #[account]
@@ -12,7 +12,7 @@ pub struct Session {
     pub expires_at: i64,
 
     // For AnchorV1 that would be 10 discriminators (10 different instructions)
-    #[max_len(80)]
+    #[max_len(Session::MAX_DISCRIMINATORS_LEN)]
     pub allowed_instructions_discriminators: Vec<u8>,
     // AnchorV1 has 8 bytes discriminator, Quasar 1 byte, SPL token 1, they can vary
     pub discriminator_size: u8,
@@ -22,6 +22,8 @@ pub struct Session {
 }
 
 impl Session {
+    pub const MAX_DISCRIMINATORS_LEN: usize = 80;
+
     pub const LEN: usize = 8 + Self::INIT_SPACE;
 
     pub const SEED_PREFIX: &'static [u8] = b"session";

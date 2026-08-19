@@ -8,11 +8,12 @@ pub mod utils;
 pub use instructions::approve_session::*;
 pub use instructions::create_session::*;
 pub use instructions::create_smart_wallet::*;
+pub use instructions::execute_with_session::*;
 pub use instructions::initialize::*;
 pub use instructions::pause::*;
 pub use instructions::revoke_session::*;
 pub use instructions::unpause::*;
-pub use instructions::execute_with_session::*;
+pub use instructions::update_session::*;
 pub use utils::errors;
 pub use utils::events;
 
@@ -56,17 +57,29 @@ pub mod r3_session_keys {
         )
     }
 
-    pub fn approve_session(
-        ctx: Context<ApproveSession>,
-        _session_key: Pubkey,
+    pub fn update_session(
+        ctx: Context<UpdateSession>,
+        session_key: Pubkey,
+        target_program: Pubkey,
+        expires_at: i64,
+        allowed_instructions_discriminators: Vec<u8>,
+        discriminator_len: u8,
     ) -> Result<()> {
+        let _ = session_key;
+        handlers::update_session::handle(
+            ctx,
+            target_program,
+            expires_at,
+            allowed_instructions_discriminators,
+            discriminator_len,
+        )
+    }
+
+    pub fn approve_session(ctx: Context<ApproveSession>, _session_key: Pubkey) -> Result<()> {
         handlers::approve_session::handle(ctx)
     }
 
-    pub fn revoke_session(
-        ctx: Context<RevokeSession>,
-        _session_key: Pubkey,
-    ) -> Result<()> {
+    pub fn revoke_session(ctx: Context<RevokeSession>, _session_key: Pubkey) -> Result<()> {
         handlers::revoke_session::handle(ctx)
     }
 
@@ -76,5 +89,4 @@ pub mod r3_session_keys {
     ) -> Result<()> {
         handlers::execute_with_session::handle(ctx, instruction_data)
     }
-
 }

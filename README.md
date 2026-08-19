@@ -6,6 +6,14 @@ The admin creates a smart wallet (`UserSmartWallet`) for each user. A session ex
 The session cannot be used until the smart-wallet owner approves it. The owner can revoke it at any time.
 The session key is a short-lived key. The session executor creates it when it creates the session. The program uses this key to identify the session.
 
+### Session updates
+
+Only the session executor that created a session can update it. The smart-wallet owner's remedy for an unwanted grant is `revoke_session`, not editing the grant.
+
+An update may change `target_program`, `expires_at`, `allowed_instructions_discriminators`, and `discriminator_size`. The session's identity fields, `session_key` and `session_executor`, are immutable. Every successful update resets the session to `WaitingForApproval`, even if it was previously approved, so the changed grant cannot be used until the smart-wallet owner approves it again. Revocation is final: a `Revoked` session cannot be updated or re-approved.
+
+Session accounts reserve space for up to 80 discriminator bytes when they are created. Updates therefore do not reallocate the account, and both creation and update reject discriminator lists longer than 80 bytes.
+
 On `execute_with_session`, the program checks the session: it must be approved and not expired, the target program and instruction must be allowed, and remaining accounts must pass the safety rules. Then it calls the target instruction via CPI. The smart wallet PDA signs that call (`invoke_signed`).
 
 ```text
@@ -124,5 +132,4 @@ Moving to Pinocchio could be considered as an optimization after the initial pha
 Alternatively, the target program could be aware of the session-key system and use its validation macro or helper directly. This approach was developed by Gum and is now maintained by [MagicBlock](https://github.com/magicblock-labs/magicblock-engine-examples/tree/main/session-keys/anchor).
 However, it is not generic because every target program must be updated to support session keys. 
 My solution keeps the target program unaware of sessions and better demonstrates Solana native account abstraction through a smart-wallet PDA.
-
 

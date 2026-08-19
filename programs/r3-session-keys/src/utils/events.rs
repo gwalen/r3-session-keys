@@ -13,6 +13,18 @@ pub struct SessionCreated {
 }
 
 #[event]
+pub struct SessionUpdated {
+    pub session: Pubkey,
+    pub user_smart_wallet: Pubkey,
+    pub session_executor: Pubkey,
+    pub session_key: Pubkey,
+    pub target_program: Pubkey,
+    pub expires_at: i64,
+    pub allowed_instructions_discriminators: Vec<u8>,
+    pub discriminator_size: u8,
+}
+
+#[event]
 pub struct SessionApproved {
     pub session: Pubkey,
     pub user_smart_wallet: Pubkey,

@@ -118,6 +118,37 @@ impl R3SessionKeysClient {
             .remove(0)
     }
 
+    pub fn update_session(
+        &self,
+        session_executor: Pubkey,
+        user_smart_wallet: Pubkey,
+        session_key: Pubkey,
+        target_program: Pubkey,
+        expires_at: i64,
+        allowed_instructions_discriminators: Vec<u8>,
+        discriminator_len: u8,
+    ) -> Instruction {
+        let (program_config, _) = ProgramConfig::find_pda();
+        let (session, _) = Session::find_pda(&user_smart_wallet, &session_key);
+        self.program
+            .request()
+            .accounts(accounts::UpdateSession {
+                session_executor,
+                program_config,
+                user_smart_wallet,
+                session,
+            })
+            .args(instruction::UpdateSession {
+                session_key,
+                target_program,
+                expires_at,
+                allowed_instructions_discriminators,
+                discriminator_len,
+            })
+            .instructions()
+            .remove(0)
+    }
+
     pub fn revoke_session(
         &self,
         smart_wallet_owner: Pubkey,

@@ -6,6 +6,7 @@ pub mod state;
 pub mod utils;
 
 pub use instructions::approve_session::*;
+pub use instructions::close_session::*;
 pub use instructions::create_session::*;
 pub use instructions::create_smart_wallet::*;
 pub use instructions::execute_with_session::*;
@@ -81,6 +82,10 @@ pub mod r3_session_keys {
 
     pub fn revoke_session(ctx: Context<RevokeSession>, _session_key: Pubkey) -> Result<()> {
         handlers::revoke_session::handle(ctx)
+    }
+
+    pub fn close_session(ctx: Context<CloseSession>, _session_key: Pubkey) -> Result<()> {
+        handlers::close_session::handle(ctx)
     }
 
     pub fn execute_with_session(

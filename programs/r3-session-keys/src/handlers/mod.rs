@@ -5,5 +5,6 @@ pub mod create_smart_wallet;
 pub mod create_session;
 pub mod update_session;
 pub mod approve_session;
+pub mod close_session;
 pub mod revoke_session;
 pub mod execute_with_session;

@@ -20,7 +20,7 @@ wallet = "~/.config/solana/id.json"
 test = "cargo test"
 # run tests with println logs
 test-rust-logs = "cargo test -- --nocapture"
-test-ts = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/0*.ts"
+test-ts = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/*.ts"
 
 
 [hooks]

@@ -46,12 +46,15 @@ pub fn load<T: AccountDeserialize>(env: &Env, key: &Pubkey) -> T {
     T::try_deserialize(&mut data).unwrap()
 }
 
-pub fn send_tx_expect_ok(svm: &mut LiteSVM, ix: Instruction, signers: &[&Keypair]) {
+pub fn send_tx_expect_ok(svm: &mut LiteSVM, ix: Instruction, signers: &[&Keypair]) -> u64 {
     let tx = signed_v0_tx(svm, ix, signers);
     let result = svm.send_transaction(tx);
     advance_blockhash(svm);
     match result {
-        Ok(meta) => println!("{}", meta.pretty_logs()),
+        Ok(meta) => {
+            println!("{}", meta.pretty_logs());
+            meta.fee
+        }
         Err(e) => {
             println!("Transaction failed: {:?}", e.err);
             println!("{}", e.meta.pretty_logs());

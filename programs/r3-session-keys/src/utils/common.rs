@@ -2,6 +2,20 @@ use anchor_lang::prelude::*;
 
 use crate::{state::session::Session, utils::errors::DappError};
 
+// To close an account it is enough to remove its lamports; to prevent a revival attack
+// we also zeroize the data. The Solana runtime garbage-collects it after the transaction.
+pub fn close_account<'a>(receiver: &AccountInfo<'a>, account_to_close: &AccountInfo<'a>) -> Result<()> {
+    let all_lamports = account_to_close.lamports();
+
+    **account_to_close.try_borrow_mut_lamports()? = 0;
+    **receiver.try_borrow_mut_lamports()? += all_lamports;
+
+    let mut data = account_to_close.data.borrow_mut();
+    data.fill(0);
+
+    Ok(())
+}
+
 pub fn validate_session_params(
     discriminators: &[u8],
     discriminator_len: u8,

@@ -172,6 +172,29 @@ impl R3SessionKeysClient {
             .remove(0)
     }
 
+    pub fn close_session(
+        &self,
+        session_executor: Pubkey,
+        user_smart_wallet: Pubkey,
+        session_key: Pubkey,
+    ) -> Instruction {
+        let (program_config, _) = ProgramConfig::find_pda();
+        let (session, _) = Session::find_pda(&user_smart_wallet, &session_key);
+        self.program
+            .request()
+            .accounts(accounts::CloseSession {
+                session_executor,
+                program_config,
+                user_smart_wallet,
+                session,
+            })
+            .args(instruction::CloseSession {
+                _session_key: session_key,
+            })
+            .instructions()
+            .remove(0)
+    }
+
     pub fn execute_with_session(
         &self,
         session_executor: Pubkey,

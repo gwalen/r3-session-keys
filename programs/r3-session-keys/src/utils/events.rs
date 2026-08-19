@@ -41,6 +41,14 @@ pub struct SessionRevoked {
 }
 
 #[event]
+pub struct SessionClosed {
+    pub session: Pubkey,
+    pub user_smart_wallet: Pubkey,
+    pub session_executor: Pubkey,
+    pub session_key: Pubkey,
+}
+
+#[event]
 pub struct ProgramPaused {
     pub program_config: Pubkey,
     pub admin: Pubkey,

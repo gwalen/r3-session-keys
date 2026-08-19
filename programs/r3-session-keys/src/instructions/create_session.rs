@@ -27,7 +27,7 @@ pub struct CreateSession<'info> {
     #[account(
         init,
         payer = session_executor,
-        space = 8 + Session::INIT_SPACE,
+        space = Session::LEN,
         seeds = [Session::SEED_PREFIX, user_smart_wallet.key().as_ref(), session_key.key().as_ref()],
         bump
     )]

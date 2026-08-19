@@ -10,8 +10,8 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = admin,
-        space = 8 + ProgramConfig::INIT_SPACE,
-        seeds = [ProgramConfig::SEED_PREFIX.as_ref()],
+        space = ProgramConfig::LEN,
+        seeds = [ProgramConfig::SEED_PREFIX],
         bump
     )]
     pub program_config: Account<'info, ProgramConfig>,

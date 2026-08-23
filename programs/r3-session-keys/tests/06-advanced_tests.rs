@@ -2,7 +2,7 @@ mod common;
 
 use {
     anchor_lang::{
-        prelude::{AccountMeta, Pubkey},
+        prelude::Pubkey,
         solana_program::{program_pack::Pack, system_instruction},
         AccountDeserialize,
     },
@@ -16,6 +16,7 @@ use {
     solana_keypair::Keypair,
     solana_signer::Signer,
     std::time::{SystemTime, UNIX_EPOCH},
+    associated_token::spl_associated_token_account::instruction::create_associated_token_account,
 };
 
 const TOKEN_DECIMALS: u8 = 6;
@@ -68,7 +69,7 @@ fn initialize_mock_token_pool(
 
     let user_deposit_account =
         mock_client::user_deposit_account(&token_owner, &deposit_mint.pubkey());
-    let create_user_deposit_account = associated_token::spl_associated_token_account::instruction::create_associated_token_account(
+    let create_user_deposit_account = create_associated_token_account(
         &env.admin.pubkey(),
         &token_owner,
         &deposit_mint.pubkey(),
@@ -94,7 +95,7 @@ fn initialize_mock_token_pool(
     let lp_mint = mock_client::lp_mint_pda(&pool);
     let vault = mock_client::vault_address(&pool, &deposit_mint.pubkey());
     let user_lp_account = mock_client::user_lp_account(&token_owner, &lp_mint);
-    let create_user_lp_account = associated_token::spl_associated_token_account::instruction::create_associated_token_account(
+    let create_user_lp_account = create_associated_token_account(
         &env.admin.pubkey(),
         &token_owner,
         &lp_mint,
@@ -166,7 +167,7 @@ fn mint_supply(env: &Env, address: &Pubkey) -> u64 {
 }
 
 #[test]
-fn test_execute_mock_deposit_with_session_executor_tokens() {
+fn test_execute_mock_deposit_with_smart_wallet_tokens() {
     let client = client::R3SessionKeysClient::new();
     let mut env = Env::new();
     let initialize_ix = client.initialize(env.admin.pubkey());
@@ -183,19 +184,16 @@ fn test_execute_mock_deposit_with_session_executor_tokens() {
     );
 
     let session_executor = env.admin.pubkey();
-    let token_pool = initialize_mock_token_pool(&mut env, &mock_client, session_executor);
-    let deposit_account_before = token_account(&env, &token_pool.user_deposit_account);
-    assert_eq!(deposit_account_before.owner, session_executor);
+    let token_pool_fixture = initialize_mock_token_pool(&mut env, &mock_client, user_smart_wallet);
+    let deposit_account_before = token_account(&env, &token_pool_fixture.user_deposit_account);
+    assert_eq!(deposit_account_before.owner, user_smart_wallet);
     assert_eq!(deposit_account_before.amount, INITIAL_TOKEN_BALANCE);
 
-    let mut deposit_ix =
-        mock_client.deposit(session_executor, token_pool.deposit_mint, DEPOSIT_AMOUNT);
+    // The smart wallet is the mock-program user. execute_with_session strips its
+    // is_signer flag for the outer tx and restores it on the CPI via invoke_signed.
+    let deposit_ix =
+        mock_client.deposit(user_smart_wallet, token_pool_fixture.deposit_mint, DEPOSIT_AMOUNT);
     assert!(deposit_ix.data.starts_with(&deposit_discriminator));
-    // The executor supplies its own tokens. The smart-wallet account is forwarded
-    // read-only so the session program can still validate the session's wallet.
-    deposit_ix
-        .accounts
-        .push(AccountMeta::new_readonly(user_smart_wallet, false));
     let execute = client.execute_with_session(
         session_executor,
         session_key.pubkey(),
@@ -205,18 +203,18 @@ fn test_execute_mock_deposit_with_session_executor_tokens() {
     send_tx_expect_ok(&mut env.svm, execute, &[&env.admin, &session_key]);
 
     assert_eq!(
-        token_account(&env, &token_pool.user_deposit_account).amount,
+        token_account(&env, &token_pool_fixture.user_deposit_account).amount,
         INITIAL_TOKEN_BALANCE - DEPOSIT_AMOUNT
     );
     assert_eq!(
-        token_account(&env, &token_pool.vault).amount,
+        token_account(&env, &token_pool_fixture.vault).amount,
         DEPOSIT_AMOUNT
     );
     assert_eq!(
-        token_account(&env, &token_pool.user_lp_account).amount,
+        token_account(&env, &token_pool_fixture.user_lp_account).amount,
         DEPOSIT_AMOUNT
     );
-    assert_eq!(mint_supply(&env, &token_pool.lp_mint), DEPOSIT_AMOUNT);
+    assert_eq!(mint_supply(&env, &token_pool_fixture.lp_mint), DEPOSIT_AMOUNT);
 }
 
 #[test]
@@ -237,12 +235,9 @@ fn test_execute_mock_withdraw_not_allowed_by_deposit_only_session() {
     );
 
     let session_executor = env.admin.pubkey();
-    let token_pool = initialize_mock_token_pool(&mut env, &mock_client, session_executor);
-    let mut deposit_ix =
-        mock_client.deposit(session_executor, token_pool.deposit_mint, DEPOSIT_AMOUNT);
-    deposit_ix
-        .accounts
-        .push(AccountMeta::new_readonly(user_smart_wallet, false));
+    let token_pool_fixture = initialize_mock_token_pool(&mut env, &mock_client, user_smart_wallet);
+    let deposit_ix =
+        mock_client.deposit(user_smart_wallet, token_pool_fixture.deposit_mint, DEPOSIT_AMOUNT);
     let execute_deposit = client.execute_with_session(
         session_executor,
         session_key.pubkey(),
@@ -252,20 +247,17 @@ fn test_execute_mock_withdraw_not_allowed_by_deposit_only_session() {
     send_tx_expect_ok(&mut env.svm, execute_deposit, &[&env.admin, &session_key]);
 
     let balances_before = (
-        token_account(&env, &token_pool.user_deposit_account).amount,
-        token_account(&env, &token_pool.vault).amount,
-        token_account(&env, &token_pool.user_lp_account).amount,
-        mint_supply(&env, &token_pool.lp_mint),
+        token_account(&env, &token_pool_fixture.user_deposit_account).amount,
+        token_account(&env, &token_pool_fixture.vault).amount,
+        token_account(&env, &token_pool_fixture.user_lp_account).amount,
+        mint_supply(&env, &token_pool_fixture.lp_mint),
     );
 
     let withdraw_discriminator = mock_client::withdraw_discriminator();
-    let mut withdraw_ix =
-        mock_client.withdraw(session_executor, token_pool.deposit_mint, DEPOSIT_AMOUNT);
+    let withdraw_ix =
+        mock_client.withdraw(user_smart_wallet, token_pool_fixture.deposit_mint, DEPOSIT_AMOUNT);
     assert!(withdraw_ix.data.starts_with(withdraw_discriminator));
     assert!(!withdraw_ix.data.starts_with(&deposit_discriminator));
-    withdraw_ix
-        .accounts
-        .push(AccountMeta::new_readonly(user_smart_wallet, false));
     let execute_withdraw = client.execute_with_session(
         session_executor,
         session_key.pubkey(),
@@ -279,10 +271,10 @@ fn test_execute_mock_withdraw_not_allowed_by_deposit_only_session() {
         "{error}"
     );
     let balances_after = (
-        token_account(&env, &token_pool.user_deposit_account).amount,
-        token_account(&env, &token_pool.vault).amount,
-        token_account(&env, &token_pool.user_lp_account).amount,
-        mint_supply(&env, &token_pool.lp_mint),
+        token_account(&env, &token_pool_fixture.user_deposit_account).amount,
+        token_account(&env, &token_pool_fixture.vault).amount,
+        token_account(&env, &token_pool_fixture.user_lp_account).amount,
+        mint_supply(&env, &token_pool_fixture.lp_mint),
     );
     assert_eq!(balances_after, balances_before);
 }

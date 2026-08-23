@@ -8,9 +8,9 @@ The session key is a short-lived key. The session executor creates it when it cr
 
 ### Session updates
 
-Only the session executor that created a session can update it. The smart-wallet owner's remedy for an unwanted grant is `revoke_session`, not editing the grant.
+Only the session executor that created a session can update it. The smart-wallet owner's remedy for an unwanted session is `revoke_session`.
 
-An update may change `target_program`, `expires_at`, `allowed_instructions_discriminators`, and `discriminator_size`. The session's identity fields, `session_key` and `session_executor`, are immutable. Every successful update resets the session to `WaitingForApproval`, even if it was previously approved, so the changed grant cannot be used until the smart-wallet owner approves it again. Revocation is final: a `Revoked` session cannot be updated or re-approved.
+An update may change `target_program`, `expires_at`, `allowed_instructions_discriminators`, and `discriminator_size`. The session's identity fields, `session_key` and `session_executor`, are immutable. Every successful update resets the session to `WaitingForApproval`, even if it was previously approved, so the changed session cannot be used until the smart-wallet owner approves it again. Revocation is final: a `Revoked` session cannot be updated or re-approved.
 
 Session accounts reserve space for up to 80 discriminator bytes when they are created. Updates therefore do not reallocate the account, and both creation and update reject discriminator lists longer than 80 bytes.
 
@@ -99,7 +99,7 @@ review, and contribute to the program. Selecting a niche framework may introduce
 
 I have considered the following alternatives:
 
-- This framework is gaining popularity and uses zero-copy, no_std, and other optimizations that significantly reduce program binary size and CU usage. Pinocchio and P-Token were audited.
+- Pinocchio: this framework is gaining popularity and uses zero-copy, no_std, and other optimizations that significantly reduce program binary size and CU usage. Pinocchio was audited.
 Pinocchio is also a low-level framework. It requires more boilerplate and sometimes uses Rust unsafe, so it has a much higher entry level than Anchor.
 Moving to Pinocchio could be considered as an optimization after the initial phase of testing with partners, if reducing binary size and CU usage becomes a priority.
 

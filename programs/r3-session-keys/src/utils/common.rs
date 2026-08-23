@@ -38,7 +38,6 @@ pub fn validate_session_params(
 pub fn read_array_element(array: &[u8], index: usize, element_size: usize) -> &[u8] {
     let start = index * element_size;
     let end = start + element_size;
-    // array[start..end].to_vec()
     &array[start..end]
 }
 

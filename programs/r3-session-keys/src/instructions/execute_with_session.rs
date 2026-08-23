@@ -8,9 +8,11 @@ use crate::state::{program_config::ProgramStatus, session::SessionStatus};
 
 #[derive(Accounts)]
 pub struct ExecuteWithSession<'info> {
+    /// We explicitly signal that this account is mutable and therefore could be used as payer for pda and fees in target program calls
+    #[account(mut)]
     pub session_executor: Signer<'info>,
 
-    // Ephemeral key proving the caller holds this session
+    /// Ephemeral key proving the caller holds this session
     pub session_key: Signer<'info>,
 
     #[account(

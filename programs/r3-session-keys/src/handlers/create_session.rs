@@ -25,7 +25,7 @@ pub fn handle(
         session_key,
         target_program,
         expires_at,
-        allowed_instructions_discriminators,
+        allowed_instructions_discriminators: allowed_instructions_discriminators.clone(),
         discriminator_size: discriminator_len,
         status: SessionStatus::WaitingForApproval,
         bump: ctx.bumps.session,
@@ -38,11 +38,7 @@ pub fn handle(
         session_key,
         target_program,
         expires_at,
-        allowed_instructions_discriminators: ctx
-            .accounts
-            .session
-            .allowed_instructions_discriminators
-            .clone(),
+        allowed_instructions_discriminators,
         discriminator_size: discriminator_len,
     });
 

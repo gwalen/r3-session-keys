@@ -12,9 +12,9 @@ pub struct Unpause<'info> {
     #[account(
         mut,
         seeds = [ProgramConfig::SEED_PREFIX],
-        bump = program_config.bump,
         has_one = admin @ DappError::UnauthorizedAdmin,
         constraint = program_config.status == ProgramStatus::Paused @ DappError::AlreadyActive,
+        bump = program_config.bump,
     )]
     pub program_config: Account<'info, ProgramConfig>,
 }

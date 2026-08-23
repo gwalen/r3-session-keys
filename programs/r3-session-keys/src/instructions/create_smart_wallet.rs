@@ -23,7 +23,7 @@ pub struct CreateSmartWallet<'info> {
     #[account(
         init,
         payer = admin,
-        space = 8 + UserSmartWallet::INIT_SPACE,
+        space = UserSmartWallet::LEN,
         seeds = [UserSmartWallet::SEED_PREFIX, user_wallet.key().as_ref()],
         bump
     )]

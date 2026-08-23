@@ -154,9 +154,10 @@ export function executeWithSession(
       .executeWithSession(targetInstruction.data)
       // user_smart_wallet seeds reference its own `smart_wallet_owner` field, so it is the one
       // account the IDL resolver cannot derive - program_config and session are resolved from it
-      .accountsPartial({
+      .accounts({
         sessionExecutor,
         sessionKey,
+        // @ts-ignore - anchor can not derive it
         userSmartWallet,
         targetProgram: targetInstruction.programId,
       })

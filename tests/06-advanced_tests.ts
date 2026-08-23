@@ -247,7 +247,7 @@ describe("06 - Advanced tests (token pool)", () => {
     // read-only so the session program can still validate the session's wallet.
     depositIx.keys.push({ pubkey: userSmartWallet, isSigner: false, isWritable: false });
 
-    await executeWithSession(program, {
+    const tx = await executeWithSession(program, {
       sessionExecutor,
       sessionKey: sessionKey.publicKey,
       userSmartWallet,
@@ -259,6 +259,7 @@ describe("06 - Advanced tests (token pool)", () => {
         console.log("Error: ", e);
         throw e;
       });
+    console.log("Deposit tx: ", tx);
 
     const balances = await tokenBalances(tokenPool);
     assert.equal(balances.userDepositAccount, BigInt(INITIAL_TOKEN_BALANCE - DEPOSIT_AMOUNT));

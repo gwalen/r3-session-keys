@@ -2,10 +2,10 @@ import * as anchor from "@anchor-lang/core";
 import { Program } from "@anchor-lang/core";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import {
-  createAssociatedTokenAccount,
   createMint,
   getAccount,
   getMint,
+  getOrCreateAssociatedTokenAccount,
   mintTo,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
@@ -38,6 +38,7 @@ describe("06 - Advanced tests (token pool)", () => {
   anchor.setProvider(provider);
   const baseWallet = provider.wallet as anchor.Wallet;
   const connection = provider.connection;
+  const sessionExecutor = baseWallet.publicKey;
 
   const program = anchor.workspace.r3SessionKeys as Program<R3SessionKeys>;
   let mockProgram: Program<MockProgram>;
@@ -61,11 +62,13 @@ describe("06 - Advanced tests (token pool)", () => {
       TOKEN_PROGRAM_ID
     );
 
-    const userDepositAccount = await createAssociatedTokenAccount(
+    const { address: userDepositAccount } = await getOrCreateAssociatedTokenAccount(
       connection,
       baseWallet.payer,
       depositMint,
       tokenOwner,
+      true,
+      undefined,
       undefined,
       TOKEN_PROGRAM_ID
     );
@@ -101,11 +104,13 @@ describe("06 - Advanced tests (token pool)", () => {
       });
 
     // LP mint is created by the mock program as a Token-2022 mint
-    const userLpAccount = await createAssociatedTokenAccount(
+    const { address: userLpAccount } = await getOrCreateAssociatedTokenAccount(
       connection,
       baseWallet.payer,
       lpMint,
       tokenOwner,
+      true,
+      undefined,
       undefined,
       TOKEN_2022_PROGRAM_ID
     );
@@ -145,7 +150,7 @@ describe("06 - Advanced tests (token pool)", () => {
         discriminatorLen
       )
       .accounts({
-        sessionExecutor: baseWallet.publicKey,
+        sessionExecutor,
         userSmartWallet,
       })
       .signers([baseWallet.payer])
@@ -224,94 +229,82 @@ describe("06 - Advanced tests (token pool)", () => {
     };
   }
 
-  it("Execute mock deposit with session executor tokens", async () => {
-    const { sessionKey, userSmartWallet } = await createApprovedSession(
-      mock.DEPOSIT_DISCRIMINATOR,
-      mock.DEPOSIT_DISCRIMINATOR.length
-    );
+  describe("deposit and withdraw with separate session", () => {
+    let sessionKey: Keypair;
+    let userSmartWallet: PublicKey;
+    let tokenPoolFixture: TokenPoolFixture;
 
-    const sessionExecutor = baseWallet.publicKey;
-    const tokenPool = await initializeMockTokenPool(sessionExecutor);
-    const depositAccountBefore = await getAccount(
-      connection,
-      tokenPool.userDepositAccount,
-      undefined,
-      TOKEN_PROGRAM_ID
-    );
-    assert.equal(depositAccountBefore.owner.toBase58(), sessionExecutor.toBase58());
-    assert.equal(depositAccountBefore.amount, BigInt(INITIAL_TOKEN_BALANCE));
+    before(async () => {
+      const session = await createApprovedSession(
+        mock.DEPOSIT_DISCRIMINATOR,
+        mock.DEPOSIT_DISCRIMINATOR.length
+      );
+      sessionKey = session.sessionKey;
+      userSmartWallet = session.userSmartWallet;
+      tokenPoolFixture = await initializeMockTokenPool(userSmartWallet);
+    });
 
-    const depositIx = await depositInstruction(sessionExecutor, tokenPool, DEPOSIT_AMOUNT);
-    assert.ok(depositIx.data.subarray(0, 8).equals(mock.DEPOSIT_DISCRIMINATOR));
-    // The executor supplies its own tokens. The smart-wallet account is forwarded
-    // read-only so the session program can still validate the session's wallet.
-    depositIx.keys.push({ pubkey: userSmartWallet, isSigner: false, isWritable: false });
+    it("Execute mock deposit with smart wallet tokens", async () => {
+      const depositAccountBefore = await getAccount(
+        connection,
+        tokenPoolFixture.userDepositAccount,
+        undefined,
+        TOKEN_PROGRAM_ID
+      );
+      assert.equal(depositAccountBefore.owner.toBase58(), userSmartWallet.toBase58());
+      assert.equal(depositAccountBefore.amount, BigInt(INITIAL_TOKEN_BALANCE));
 
-    const tx = await executeWithSession(program, {
-      sessionExecutor,
-      sessionKey: sessionKey.publicKey,
-      userSmartWallet,
-      targetInstruction: depositIx,
-    })
-      .signers([baseWallet.payer, sessionKey])
-      .rpc()
-      .catch((e) => {
-        console.log("Error: ", e);
-        throw e;
-      });
-    console.log("Deposit tx: ", tx);
+      // The smart wallet is the mock-program user. executeWithSession strips its
+      // isSigner flag for the outer tx and restores it on the CPI when we do invoke_signed()
+      const depositIx = await depositInstruction(userSmartWallet, tokenPoolFixture, DEPOSIT_AMOUNT);
+      assert.ok(depositIx.data.subarray(0, 8).equals(mock.DEPOSIT_DISCRIMINATOR));
 
-    const balances = await tokenBalances(tokenPool);
-    assert.equal(balances.userDepositAccount, BigInt(INITIAL_TOKEN_BALANCE - DEPOSIT_AMOUNT));
-    assert.equal(balances.vault, BigInt(DEPOSIT_AMOUNT));
-    assert.equal(balances.userLpAccount, BigInt(DEPOSIT_AMOUNT));
-    assert.equal(balances.lpMintSupply, BigInt(DEPOSIT_AMOUNT));
-  });
-
-  it("Execute mock withdraw not allowed by deposit only session", async () => {
-    const { sessionKey, userSmartWallet } = await createApprovedSession(
-      mock.DEPOSIT_DISCRIMINATOR,
-      mock.DEPOSIT_DISCRIMINATOR.length
-    );
-
-    const sessionExecutor = baseWallet.publicKey;
-    const tokenPool = await initializeMockTokenPool(sessionExecutor);
-
-    const depositIx = await depositInstruction(sessionExecutor, tokenPool, DEPOSIT_AMOUNT);
-    depositIx.keys.push({ pubkey: userSmartWallet, isSigner: false, isWritable: false });
-    await executeWithSession(program, {
-      sessionExecutor,
-      sessionKey: sessionKey.publicKey,
-      userSmartWallet,
-      targetInstruction: depositIx,
-    })
-      .signers([baseWallet.payer, sessionKey])
-      .rpc()
-      .catch((e) => {
-        console.log("Error: ", e);
-        throw e;
-      });
-
-    const balancesBefore = await tokenBalances(tokenPool);
-
-    const withdrawIx = await withdrawInstruction(sessionExecutor, tokenPool, DEPOSIT_AMOUNT);
-    assert.ok(withdrawIx.data.subarray(0, 8).equals(mock.WITHDRAW_DISCRIMINATOR));
-    assert.ok(!withdrawIx.data.subarray(0, 8).equals(mock.DEPOSIT_DISCRIMINATOR));
-    withdrawIx.keys.push({ pubkey: userSmartWallet, isSigner: false, isWritable: false });
-
-    const error = await sendExpectError(
-      executeWithSession(program, {
+      const tx = await executeWithSession(program, {
         sessionExecutor,
         sessionKey: sessionKey.publicKey,
         userSmartWallet,
-        targetInstruction: withdrawIx,
+        targetInstruction: depositIx,
       })
         .signers([baseWallet.payer, sessionKey])
         .rpc()
-    );
+        .catch((e) => {
+          console.log("Error: ", e);
+          throw e;
+        });
+      console.log("Deposit tx: ", tx);
 
-    assert.ok(error.includes("NotAllowedInstructionDiscriminator"), error);
-    const balancesAfter = await tokenBalances(tokenPool);
-    assert.deepEqual(balancesAfter, balancesBefore);
+      const balances = await tokenBalances(tokenPoolFixture);
+      assert.equal(balances.userDepositAccount, BigInt(INITIAL_TOKEN_BALANCE - DEPOSIT_AMOUNT));
+      assert.equal(balances.vault, BigInt(DEPOSIT_AMOUNT));
+      assert.equal(balances.userLpAccount, BigInt(DEPOSIT_AMOUNT));
+      assert.equal(balances.lpMintSupply, BigInt(DEPOSIT_AMOUNT));
+    });
+
+    it("Execute mock withdraw not allowed by deposit only session", async () => {
+      const balancesBefore = await tokenBalances(tokenPoolFixture);
+
+      const withdrawIx = await withdrawInstruction(
+        userSmartWallet,
+        tokenPoolFixture,
+        DEPOSIT_AMOUNT
+      );
+      assert.ok(withdrawIx.data.subarray(0, 8).equals(mock.WITHDRAW_DISCRIMINATOR));
+      assert.ok(!withdrawIx.data.subarray(0, 8).equals(mock.DEPOSIT_DISCRIMINATOR));
+
+      const error = await sendExpectError(
+        executeWithSession(program, {
+          sessionExecutor,
+          sessionKey: sessionKey.publicKey,
+          userSmartWallet,
+          targetInstruction: withdrawIx,
+        })
+          .signers([baseWallet.payer, sessionKey])
+          .rpc()
+      );
+
+      assert.ok(error.includes("NotAllowedInstructionDiscriminator"), error);
+      const balancesAfter = await tokenBalances(tokenPoolFixture);
+      assert.deepEqual(balancesAfter, balancesBefore);
+    });
   });
 });

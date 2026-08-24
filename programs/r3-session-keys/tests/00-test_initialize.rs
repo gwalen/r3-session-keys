@@ -2,25 +2,12 @@ mod common;
 
 use {
     anchor_lang::AccountDeserialize,
-    common::client::R3SessionKeysClient,
+    common::{client::R3SessionKeysClient, send_tx_expect_ok},
     litesvm::LiteSVM,
     r3_session_keys::state::program_config::{ProgramConfig, ProgramStatus},
     solana_keypair::Keypair,
-    solana_message::{Message, VersionedMessage},
     solana_signer::Signer,
-    solana_transaction::versioned::VersionedTransaction,
 };
-
-fn send_and_log(svm: &mut LiteSVM, tx: VersionedTransaction) {
-    match svm.send_transaction(tx) {
-        Ok(meta) => println!("{}", meta.pretty_logs()),
-        Err(e) => {
-            println!("Transaction failed: {:?}", e.err);
-            println!("{}", e.meta.pretty_logs());
-            panic!("send_transaction failed: {:?}", e.err);
-        }
-    }
-}
 
 #[test]
 fn test_initialize() {
@@ -36,15 +23,8 @@ fn test_initialize() {
     svm.airdrop(&payer.pubkey(), 1_000_000_000).unwrap();
     let client = R3SessionKeysClient::new();
 
-    println!("XXX program id: {:?}", program_id);
-
     let ix = client.initialize(payer.pubkey());
-
-    let blockhash = svm.latest_blockhash();
-    let msg = Message::new_with_blockhash(&[ix], Some(&payer.pubkey()), &blockhash);
-    let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), &[&payer]).unwrap();
-
-    send_and_log(&mut svm, tx);
+    send_tx_expect_ok(&mut svm, ix, &[&payer]);
 
     let program_config_account = svm.get_account(&program_config).unwrap();
     let mut data: &[u8] = &program_config_account.data;

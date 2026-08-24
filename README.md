@@ -126,8 +126,3 @@ Moving to Pinocchio could be considered as an optimization after the initial pha
 
 5. Admin should be able to deactivate a user smart-wallet (but it is more a program management feature than a session-key feature so I skip it for now as the code base is already big)
 
-## Alternative solution
-Alternatively, the target program could be aware of the session-key system and use its validation macro or helper directly. This approach was developed by Gum and is now maintained by [MagicBlock](https://github.com/magicblock-labs/magicblock-engine-examples/tree/main/session-keys/anchor).
-However, it is not generic because every target program must be updated to support session keys. 
-My solution keeps the target program unaware of sessions and better demonstrates Solana native account abstraction through a smart-wallet PDA.
-
